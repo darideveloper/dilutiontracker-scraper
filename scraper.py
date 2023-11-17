@@ -29,19 +29,40 @@ class ScrapingDilutionTracker (WebScraping):
             chrome_folder=CHROME_FOLDER,
             start_killing=True,
         )
+        
+    def __get_column_value__ (self, column_height:float, graph_height:int, max_value:float ) -> float:
+        """ Get column value from graph
 
-    def __get_columns_data__(self, selector_wrapper: str, selector_columns: str,
-                             selector_height: str, selector_max_value: str) -> list:
+        Args:
+            column_height (float): column height in px
+            graph_height (int): height of graph in px
+            max_value (float): max value of graph
+
+        Returns:
+            float: column value
+        """
+
+        # Calculate column value (with 20 decimals)
+        value = (column_height * max_value / graph_height)
+        value = value * 100
+        value = round(value, 2)
+        value = value / 100
+        
+        return value 
+
+    def __get_columns_data__ (self, selector_columns_wrapper:str, selector_column:str,
+                             graph_height:int, max_value:float) -> list:
         """ Get regular columns data from graph
 
         Args:
-            selector_wrapper (str): graph wrapper
-            selector_columns (str): each column wrapper
-            selector_height (str): height value of graph
-            selector_max_value (str): height size of graph
+            selector_columns_wrapper (str): columns weapper
+            selector_columns (str): each column
+            graph_height (int): height of graph in px
+            max_value (float): max value of graph
 
         Returns:
-            list: historical data
+            dict: columns data
+            
             Structure:
                 [
                     {
@@ -53,45 +74,41 @@ class ScrapingDilutionTracker (WebScraping):
                 ]
         """
 
-        # Ger graf values
-        graph_height = int(self.get_attrib(selector_height, "height"))
-        max_value = float(self.get_text(selector_max_value))
-
         # Loop each column
-        columns = self.get_elems(selector_columns)
+        columns_num = len(self.get_elems(selector_column))
         columns_data = []
-        for column_index in range(len(columns)):
+        for column_index in range(columns_num):
 
-            selector_column = f"{
-                selector_wrapper}:nth-child({column_index+1}) {selector_columns}"
+            selector_current_column = f"{selector_columns_wrapper}:nth-child({column_index+1}) {selector_column}"
 
             # Skip empty columns
-            column = self.get_elems(selector_column)
+            column = self.get_elems(selector_current_column)
             if not column:
                 continue
 
-            # Get column data
-            column_date = self.get_attrib(selector_column, "name")
-            column_height = float(self.get_attrib(selector_column, "height"))
+            # Get data from current column
+            column_name = self.get_attrib(selector_current_column, "name")
+            column_height = float(self.get_attrib(selector_current_column, "height"))   
 
-            # Calculate column value (with 20 decimals)
-            hos = (column_height * max_value / graph_height)
-            hos = hos * 100
-            hos = round(hos, 2)
-            hos = hos / 100
+            column_value = self.__get_column_value__ (column_height, graph_height, max_value)
 
             # Format date and detect when columns ends
+            last_column = False
             try:
-                date = dt.strptime(column_date, "%m/%d/%Y")
+                date = dt.strptime(column_name, "%m/%d/%Y")
             except:
-                break
+                data = dt.now()
+                last_column = True
 
             # Save column data
             columns_data.append({
                 "id": column_index,
                 "date": date,
-                "hos": hos,
+                "hos": column_value,
             })
+            
+            if last_column:
+                break
 
         return columns_data
 
@@ -300,7 +317,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         return data
 
-    def get_historical_graph_data(self) -> list:
+    def get_historical_data(self) -> list:
         """ Get historical from main columns in graph
 
         Returns:
@@ -320,23 +337,56 @@ class ScrapingDilutionTracker (WebScraping):
         """
         
         selectors = {
-            "wrapper":  '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
-            "columns": 'path',
+            "columns_wrapper": '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
+            "column": 'path',
             "height": '.yAxis .recharts-cartesian-axis-tick:last-child > text',
-            "max_value": '.yAxis .recharts-cartesian-axis-tick:last-child > text tspan'
+            "max_value": '.yAxis .recharts-cartesian-axis-tick:last-child > text tspan',
+            "extra_columns": '#results-os-chart path[name="Fully Diluted"]'
+        }
+        
+        columns_colors = {
+            "#2CA1CF": "atm",
+            "#8CD2E8": "warrant",
+            "#FFD876": "convertible_preferred",
+            "#FFC107": "convertible_note",
+            "#BCC0C4": "equal",
+            "#D1D5D8": "s1",
+            
         }
         
         data = {}
-
-        columns_data = self.__get_columns_data__(
-            selectors["wrapper"],
-            selectors["columns"],
-            selectors["height"],
-            selectors["max_value"]
-        )
         
-        data["columns_data"] = columns_data
+        # Get graph info
+        graph_height = int(self.get_attrib(selectors["height"], "height"))
+        max_value = float(self.get_text(selectors["max_value"]))
 
+        # Data from regylar columns
+        data["columns_data"] = self.__get_columns_data__(
+            selectors["columns_wrapper"],
+            selectors["column"],
+            graph_height,
+            max_value,
+        )
+    
+        # Data frome extra columns
+        extra_columns = self.get_elems(selectors["extra_columns"])
+        for column in extra_columns:
+            
+            # Get color
+            column_color = column.get_attribute("fill")
+            column_height = float(column.get_attribute("height"))
+            
+            # Get column value
+            column_value = self.__get_column_value__ (column_height, graph_height, max_value)
+            
+            # Identify name with color
+            column_name = columns_colors.get(column_color, None)
+            if not column_name:
+                continue
+            
+            # Save column data
+            data[column_name] = column_value
+            
         return data 
 
 
@@ -344,7 +394,7 @@ if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
-    scraping_dilution_tracker.load_company("GMBL?a=3kxbzw")
+    scraping_dilution_tracker.load_company("CYTO?a=3kxbzw")
     # premarket_data = scraping_dilution_tracker.get_premarket_data()
-    historical_graph_data = scraping_dilution_tracker.get_historical_graph_data()
+    historical_data = scraping_dilution_tracker.get_historical_data()
     print()
