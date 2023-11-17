@@ -1,4 +1,5 @@
 import os
+from datetime import datetime as dt
 from dotenv import load_dotenv
 from logs import logger
 from scraping.web_scraping import WebScraping
@@ -132,6 +133,7 @@ class ScrapingDilutionTracker (WebScraping):
         headers_text_num = len(self.get_elems(selectors["header"]["wrapper_texts"]))
         for header_index in range (headers_text_num):
             
+            # Get key and info
             selector_header = f"{selectors["header"]["wrapper_texts"]}:nth-child({header_index+1})"
             selector_texts = f"{selector_header} {selectors["header"]["info"]}"
             texts = self.get_elems(selector_texts)
@@ -148,6 +150,7 @@ class ScrapingDilutionTracker (WebScraping):
         headers_counters_num = len(self.get_elems(selectors["header"]["wrapper_counters"]))
         for header_index in range (headers_counters_num):
             
+            # Get keys and info
             selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
             selector_counters = f"{selector_header} {selectors["header"]["info"]}"
             counters = self.get_elems(selector_counters)
@@ -177,6 +180,7 @@ class ScrapingDilutionTracker (WebScraping):
         adjectives_num = len(self.get_elems(selectors["adjectives"]["wrappers"]))
         for adjective_index in range (adjectives_num):
             
+            # Get each adjective and category
             selector_adjective = f"{selectors["adjectives"]["wrappers"]}:nth-child({adjective_index+1})"
             selector_name = f"{selector_adjective} {selectors["adjectives"]["name"]}"
             selector_info = f"{selector_adjective} {selectors["adjectives"]["info"]}"
@@ -199,6 +203,7 @@ class ScrapingDilutionTracker (WebScraping):
         our_take_num = len(self.get_elems(selectors["our_take"]["wrappers"]))
         for our_take_index in range (our_take_num):
             
+            # Get each line of our take            
             selector_our_take = f"{selectors["our_take"]["wrappers"]}:nth-child({our_take_index+2})"
             selector_datetime = f"{selector_our_take} {selectors["our_take"]["datetime"]}"
             selector_info = f"{selector_our_take} {selectors["our_take"]["info"]}"
@@ -206,6 +211,7 @@ class ScrapingDilutionTracker (WebScraping):
             datetime = self.get_text(selector_datetime).lower()
             info = self.get_text(selector_info).lower()
             
+            # Save as text
             line = f"{datetime}  {info}"
             our_take_lines += f"{line}\n"
             
@@ -216,10 +222,74 @@ class ScrapingDilutionTracker (WebScraping):
          
         return data
 
-
+    def get_historical_graph_data (self) -> list:
+        """ Get historical from graph
+        
+        Returns:
+            list: historical data
+            Structure:
+                [
+                    {
+                        "id": int,
+                        "date": datetime,
+                        "hos": float,
+                    },
+                    ...
+                ]
+        """
+        selectors = {
+            "column_wrapper":  '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
+            "column": 'path',
+            "height": '.yAxis .recharts-cartesian-axis-tick:last-child > text',
+            "max_value": 'tspan'
+        }
+        
+        # Graph data
+        graph_height = int(self.get_attrib (selectors["height"], "height"))
+        max_value_selector = f"{selectors["height"]} {selectors["max_value"]}"
+        max_value = float(self.get_text(max_value_selector))
+        
+        columns = self.get_elems(selectors["column_wrapper"])
+        columns_data = []
+        for column_index in range (len(columns)):
+            
+            selector_column = f"{selectors["column_wrapper"]}:nth-child({column_index+1}) {selectors["column"]}"
+            
+            # Skip empty columns
+            column = self.get_elems(selector_column)
+            if not column:
+                continue
+            
+            # Get column data
+            column_date = self.get_attrib (selector_column, "name")
+            column_height = float(self.get_attrib (selector_column, "height"))
+            
+            # Calculate column value (with 20 decimals)
+            hos = (column_height * max_value / graph_height)
+            hos = hos * 100
+            hos = round(hos, 2)
+            hos = hos / 100
+            
+            # Format date and detect when columns ends
+            try:
+                date = dt.strptime(column_date, "%m/%d/%Y")
+            except:
+                break
+            
+            columns_data.append({
+                "id": column_index,
+                "date": date,
+                "hos": hos,
+            })
+            
+        return columns_data
+        
+    
 if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
     scraping_dilution_tracker.load_company("GMBL?a=3kxbzw")
-    data = scraping_dilution_tracker.get_premarket_data()
+    # premarket_data = scraping_dilution_tracker.get_premarket_data()
+    historical_graph_data = scraping_dilution_tracker.get_historical_graph_data()
+    print ()
