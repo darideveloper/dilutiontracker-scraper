@@ -202,7 +202,7 @@ class ScrapingDilutionTracker (WebScraping):
             "our_take": {
                 "wrappers": '.ourTakeSingleContainer',
                 "datetime": "span:first-child",
-                "info": "span:last-child",
+                "info": "span:nth-child(2)",
             },
             "update_info": "#results-os-chart > p:nth-child(2)"
         }
@@ -298,10 +298,8 @@ class ScrapingDilutionTracker (WebScraping):
             # Get each line of our take
             selector_our_take = f"{
                 selectors["our_take"]["wrappers"]}:nth-child({our_take_index+2})"
-            selector_datetime = f"{selector_our_take} {
-                selectors["our_take"]["datetime"]}"
-            selector_info = f"{selector_our_take} {
-                selectors["our_take"]["info"]}"
+            selector_datetime = f"{selector_our_take} {selectors["our_take"]["datetime"]}"
+            selector_info = f"{selector_our_take} {selectors["our_take"]["info"]}"
 
             datetime = self.get_text(selector_datetime).lower()
             info = self.get_text(selector_info).lower()
@@ -395,6 +393,6 @@ if __name__ == "__main__":
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
     scraping_dilution_tracker.load_company("CYTO?a=3kxbzw")
-    # premarket_data = scraping_dilution_tracker.get_premarket_data()
+    premarket_data = scraping_dilution_tracker.get_premarket_data()
     historical_data = scraping_dilution_tracker.get_historical_data()
     print()
