@@ -30,6 +30,71 @@ class ScrapingDilutionTracker (WebScraping):
             start_killing=True,
         )
 
+    def __get_columns_data__(self, selector_wrapper: str, selector_columns: str,
+                             selector_height: str, selector_max_value: str) -> list:
+        """ Get regular columns data from graph
+
+        Args:
+            selector_wrapper (str): graph wrapper
+            selector_columns (str): each column wrapper
+            selector_height (str): height value of graph
+            selector_max_value (str): height size of graph
+
+        Returns:
+            list: historical data
+            Structure:
+                [
+                    {
+                        "id": int,
+                        "date": datetime,
+                        "hos": float,
+                    },
+                    ...
+                ]
+        """
+
+        # Ger graf values
+        graph_height = int(self.get_attrib(selector_height, "height"))
+        max_value = float(self.get_text(selector_max_value))
+
+        # Loop each column
+        columns = self.get_elems(selector_columns)
+        columns_data = []
+        for column_index in range(len(columns)):
+
+            selector_column = f"{
+                selector_wrapper}:nth-child({column_index+1}) {selector_columns}"
+
+            # Skip empty columns
+            column = self.get_elems(selector_column)
+            if not column:
+                continue
+
+            # Get column data
+            column_date = self.get_attrib(selector_column, "name")
+            column_height = float(self.get_attrib(selector_column, "height"))
+
+            # Calculate column value (with 20 decimals)
+            hos = (column_height * max_value / graph_height)
+            hos = hos * 100
+            hos = round(hos, 2)
+            hos = hos / 100
+
+            # Format date and detect when columns ends
+            try:
+                date = dt.strptime(column_date, "%m/%d/%Y")
+            except:
+                break
+
+            # Save column data
+            columns_data.append({
+                "id": column_index,
+                "date": date,
+                "hos": hos,
+            })
+
+        return columns_data
+
     def login(self):
         """ Validate correct login and go to app page """
 
@@ -61,7 +126,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         logger.info("Login successful")
 
-    def load_company (self, company:str):
+    def load_company(self, company: str):
         """ Load company page
 
         Args:
@@ -98,9 +163,9 @@ class ScrapingDilutionTracker (WebScraping):
                     update_info: str,                    
                 }
         """
-        
-        logger.info ("scraping premarket data...")
-        
+
+        logger.info("scraping premarket data...")
+
         selectors = {
             "name": 'h1',
             "header": {
@@ -125,39 +190,44 @@ class ScrapingDilutionTracker (WebScraping):
             "update_info": "#results-os-chart > p:nth-child(2)"
         }
         data = {}
-        
+
         # Get company name
         data["name"] = self.get_text(selectors["name"])
-        
+
         # Get header texts
-        headers_text_num = len(self.get_elems(selectors["header"]["wrapper_texts"]))
-        for header_index in range (headers_text_num):
-            
+        headers_text_num = len(self.get_elems(
+            selectors["header"]["wrapper_texts"]))
+        for header_index in range(headers_text_num):
+
             # Get key and info
-            selector_header = f"{selectors["header"]["wrapper_texts"]}:nth-child({header_index+1})"
+            selector_header = f"{
+                selectors["header"]["wrapper_texts"]}:nth-child({header_index+1})"
             selector_texts = f"{selector_header} {selectors["header"]["info"]}"
             texts = self.get_elems(selector_texts)
-            
+
             key = texts[0].text.lower()
             info = texts[1].text.lower()
-            
+
             if "sector" in key:
                 data["sector"] = info
             elif "industry" in key:
                 data["industry"] = info
-        
+
         # Get headers counters
-        headers_counters_num = len(self.get_elems(selectors["header"]["wrapper_counters"]))
-        for header_index in range (headers_counters_num):
-            
+        headers_counters_num = len(self.get_elems(
+            selectors["header"]["wrapper_counters"]))
+        for header_index in range(headers_counters_num):
+
             # Get keys and info
-            selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
-            selector_counters = f"{selector_header} {selectors["header"]["info"]}"
+            selector_header = f"{
+                selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
+            selector_counters = f"{selector_header} {
+                selectors["header"]["info"]}"
             counters = self.get_elems(selector_counters)
-            
+
             key = counters[0].text.lower()
             info = counters[1].text.lower()
-            
+
             if "mkt cap" in key:
                 data["mkt_cap"] = info.split("m")[0]
             elif "float" in key:
@@ -167,26 +237,31 @@ class ScrapingDilutionTracker (WebScraping):
             elif "t25" in key:
                 data["t25_inst_own"] = info.replace("%", "")
             elif "si" in key:
-                data["si"] = info.replace("%", "")      
-        
+                data["si"] = info.replace("%", "")
+
         # Company description
         self.click(selectors["description"]["show_more_btn"])
-        self.refresh_selenium ()
-        data["description_company"] = self.get_text(selectors["description"]["info"])
-        
-        # TODO: dilution data 
-        
+        self.refresh_selenium()
+        data["description_company"] = self.get_text(
+            selectors["description"]["info"])
+
+        # TODO: dilution data
+
         # Adjectives
-        adjectives_num = len(self.get_elems(selectors["adjectives"]["wrappers"]))
-        for adjective_index in range (adjectives_num):
-            
+        adjectives_num = len(self.get_elems(
+            selectors["adjectives"]["wrappers"]))
+        for adjective_index in range(adjectives_num):
+
             # Get each adjective and category
-            selector_adjective = f"{selectors["adjectives"]["wrappers"]}:nth-child({adjective_index+1})"
-            selector_name = f"{selector_adjective} {selectors["adjectives"]["name"]}"
-            selector_info = f"{selector_adjective} {selectors["adjectives"]["info"]}"
+            selector_adjective = f"{
+                selectors["adjectives"]["wrappers"]}:nth-child({adjective_index+1})"
+            selector_name = f"{selector_adjective} {
+                selectors["adjectives"]["name"]}"
+            selector_info = f"{selector_adjective} {
+                selectors["adjectives"]["info"]}"
             name = self.get_text(selector_name).lower()
             info = self.get_text(selector_info).lower()
-            
+
             if "overall risk" in name:
                 data["overall_risk"] = info
             elif "offering ability" in name:
@@ -197,38 +272,42 @@ class ScrapingDilutionTracker (WebScraping):
                 data["historical"] = info
             elif "cash need" in name:
                 data["cash_need"] = info
-                
+
         # Our take
         our_take_lines = ""
         our_take_num = len(self.get_elems(selectors["our_take"]["wrappers"]))
-        for our_take_index in range (our_take_num):
-            
-            # Get each line of our take            
-            selector_our_take = f"{selectors["our_take"]["wrappers"]}:nth-child({our_take_index+2})"
-            selector_datetime = f"{selector_our_take} {selectors["our_take"]["datetime"]}"
-            selector_info = f"{selector_our_take} {selectors["our_take"]["info"]}"
-            
+        for our_take_index in range(our_take_num):
+
+            # Get each line of our take
+            selector_our_take = f"{
+                selectors["our_take"]["wrappers"]}:nth-child({our_take_index+2})"
+            selector_datetime = f"{selector_our_take} {
+                selectors["our_take"]["datetime"]}"
+            selector_info = f"{selector_our_take} {
+                selectors["our_take"]["info"]}"
+
             datetime = self.get_text(selector_datetime).lower()
             info = self.get_text(selector_info).lower()
-            
+
             # Save as text
             line = f"{datetime}  {info}"
             our_take_lines += f"{line}\n"
-            
+
         data["out_take"] = our_take_lines.strip()
-        
+
         # Update info
         data["update_info"] = self.get_text(selectors["update_info"])
-         
+
         return data
 
-    def get_historical_graph_data (self) -> list:
-        """ Get historical from graph
-        
+    def get_historical_graph_data(self) -> list:
+        """ Get historical from main columns in graph
+
         Returns:
             list: historical data
             Structure:
-                [
+            {
+                columns_data:   [
                     {
                         "id": int,
                         "date": datetime,
@@ -236,55 +315,31 @@ class ScrapingDilutionTracker (WebScraping):
                     },
                     ...
                 ]
+            }
+
         """
+        
         selectors = {
-            "column_wrapper":  '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
-            "column": 'path',
+            "wrapper":  '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
+            "columns": 'path',
             "height": '.yAxis .recharts-cartesian-axis-tick:last-child > text',
-            "max_value": 'tspan'
+            "max_value": '.yAxis .recharts-cartesian-axis-tick:last-child > text tspan'
         }
         
-        # Graph data
-        graph_height = int(self.get_attrib (selectors["height"], "height"))
-        max_value_selector = f"{selectors["height"]} {selectors["max_value"]}"
-        max_value = float(self.get_text(max_value_selector))
+        data = {}
+
+        columns_data = self.__get_columns_data__(
+            selectors["wrapper"],
+            selectors["columns"],
+            selectors["height"],
+            selectors["max_value"]
+        )
         
-        columns = self.get_elems(selectors["column_wrapper"])
-        columns_data = []
-        for column_index in range (len(columns)):
-            
-            selector_column = f"{selectors["column_wrapper"]}:nth-child({column_index+1}) {selectors["column"]}"
-            
-            # Skip empty columns
-            column = self.get_elems(selector_column)
-            if not column:
-                continue
-            
-            # Get column data
-            column_date = self.get_attrib (selector_column, "name")
-            column_height = float(self.get_attrib (selector_column, "height"))
-            
-            # Calculate column value (with 20 decimals)
-            hos = (column_height * max_value / graph_height)
-            hos = hos * 100
-            hos = round(hos, 2)
-            hos = hos / 100
-            
-            # Format date and detect when columns ends
-            try:
-                date = dt.strptime(column_date, "%m/%d/%Y")
-            except:
-                break
-            
-            columns_data.append({
-                "id": column_index,
-                "date": date,
-                "hos": hos,
-            })
-            
-        return columns_data
-        
-    
+        data["columns_data"] = columns_data
+
+        return data 
+
+
 if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
@@ -292,4 +347,4 @@ if __name__ == "__main__":
     scraping_dilution_tracker.load_company("GMBL?a=3kxbzw")
     # premarket_data = scraping_dilution_tracker.get_premarket_data()
     historical_graph_data = scraping_dilution_tracker.get_historical_graph_data()
-    print ()
+    print()
