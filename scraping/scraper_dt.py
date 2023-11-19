@@ -650,13 +650,13 @@ class ScrapingDilutionTracker (WebScraping):
                 {
                     "type": str,
                     "method": str,
-                    "share_equivalent": str,
-                    "price": str,
-                    "warrants": str,
-                    "offering_amt": str,
+                    "share_equivalent": int
+                    "price": float,
+                    "warrants": int,
+                    "offering_amt": int,
                     "bank": str,
                     "investors": str,
-                    "date": str,
+                    "date": datetime,
                 },
                 ...
             ]
@@ -676,6 +676,9 @@ class ScrapingDilutionTracker (WebScraping):
             "investors": f'td:nth-child(8)',
             "date": f'td:nth-child(9)',
         }
+        int_fields = ["share_equivalent", "warrants", "offering_amt"]
+        float_fields = ["price"]
+        numeric_fields = int_fields + float_fields
 
         data = []
 
@@ -688,9 +691,24 @@ class ScrapingDilutionTracker (WebScraping):
             # Get row data
             row_data = {}
             for column_name, selector in selectors["columns"].items():
-                selector_column = f"{
-                    selector_row}:nth-child({row_index+1}) {selector}"
-                row_data[column_name] = self.get_text(selector_column)
+                
+                selector_column = f"{selector_row}:nth-child({row_index+1}) {selector}"
+                value = self.get_text(selector_column)
+                
+                # Format numeric fields
+                if column_name in numeric_fields:
+                    value = value.replace(",", "").replace("$", "")
+                    
+                    if column_name in int_fields:
+                        value = int(value)
+                    elif column_name in float_fields:
+                        value = float(value)
+                
+                row_data[column_name] = value
+                
+                # Format date field with format 2023-7-6 8:02
+                if column_name == "date":
+                    row_data[column_name] = dt.strptime(value, "%Y-%m-%d %H:%M")
 
             # Save data
             data.append(row_data)
