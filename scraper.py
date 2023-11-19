@@ -162,6 +162,7 @@ class ScrapingDilutionTracker (WebScraping):
             dict: premarket data
             Structure:
                 {
+                    found: bool,
                     name: str,
                     sector: str,
                     industry: str,
@@ -185,6 +186,7 @@ class ScrapingDilutionTracker (WebScraping):
         logger.info("scraping premarket data...")
 
         selectors = {
+            "not_found": '#filingNotInCoverageIcon + div',
             "name": 'h1',
             "header": {
                 "wrapper_texts": ".mw-1010:nth-child(1) .cursor-default > div",
@@ -207,7 +209,35 @@ class ScrapingDilutionTracker (WebScraping):
             },
             "update_info": "#results-os-chart > p:nth-child(2)"
         }
-        data = {}
+        
+        # Initial data
+        data = {
+            "found": True,
+            "dilution_data": None,
+            "name": None,
+            "sector": None,
+            "industry": None,
+            "mkt_cap": None,
+            "float_cap": None,
+            "est_cash_sh": None,
+            "t25_inst_own": None,
+            "si": None,
+            "description_company": None,
+            "overall_risk": None,
+            "offering_abillity": None,
+            "dilution_amt_ex_shelf": None,
+            "historical": None,
+            "cash_need": None,
+            "out_take": None,
+            "update_info": None,
+        }
+
+        # Validate not found data and save in dilution_data
+        not_found = self.get_text(selectors["not_found"])
+        if not_found:
+            data["dilution_data"] = not_found
+            data["found"] = False   
+            return data
 
         # Get company name
         data["name"] = self.get_text(selectors["name"])
@@ -262,8 +292,6 @@ class ScrapingDilutionTracker (WebScraping):
         self.refresh_selenium()
         data["description_company"] = self.get_text(
             selectors["description"]["info"])
-
-        # TODO: dilution data
 
         # Adjectives
         adjectives_num = len(self.get_elems(
@@ -481,8 +509,11 @@ if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
-    scraping_dilution_tracker.load_company("CYTO?a=3kxbzw")
-    # premarket_data = scraping_dilution_tracker.get_premarket_data()
-    historical_data = scraping_dilution_tracker.get_historical_data()
+    scraping_dilution_tracker.load_company("AWSDASD")
+    premarket_data = scraping_dilution_tracker.get_premarket_data()
+    if not premarket_data["found"]:
+        print(premarket_data["dilution_data"])
+        quit()
+    # historical_data = scraping_dilution_tracker.get_historical_data()
     # cash_data = scraping_dilution_tracker.get_cash_data()
     print()
