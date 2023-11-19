@@ -60,14 +60,19 @@ def main ():
         # Scraper secondary data
         logger.info("scraping historical data...")
         historical_data = scraper.get_historical_data()
+        
         logger.info("scraping cash data...")
         cash_data = scraper.get_cash_data()
+        
         logger.info("scraping extra data...")
         extra_data = scraper.get_extra_data()
+        
         logger.info("scraping complete offering data...")
         complete_offering_data = scraper.get_complete_offering_data()
+        
         logger.info("scraping news data...")
         news_data = scraper.get_news_data()
+        
         logger.info("scraping holders data...")
         holders_data = scraper.get_holders_data()
         

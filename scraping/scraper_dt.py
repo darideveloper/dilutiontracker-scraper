@@ -23,7 +23,8 @@ class ScrapingDilutionTracker (WebScraping):
             start_killing=True,
         )
 
-    def __get_column_value__(self, column_height: float, graph_height: int, max_value: float) -> float:
+    def __get_column_value__(self, column_height: float, graph_height: int,
+                             max_value: float) -> float:
         """ Get column value from graph
 
         Args:
@@ -118,6 +119,70 @@ class ScrapingDilutionTracker (WebScraping):
                     icon.remove()
                 }})
             """)
+
+    def __get_table_data__(self, selector_rows: str, column: dict,
+                           start_row: int = 1, end_row: int = -1) -> list:
+        """ get data from table structure
+
+        Args:
+            selector_rows (str): selector of each row of table
+            column (dict): column data: selector, datatype and optional extra
+            start_row (int, optional): start row index (inclusive). Defaults to 1
+            end_row (int, optional): end row index (no inclusive). Defaults to -1
+
+        Returns:
+            list: table data with dynamic structure (based on column dict)
+        """
+
+        data = []
+
+        rows_num = len(self.get_elems(selector_rows))
+        for index in range(rows_num):
+
+            # End loop if end row is reached
+            if index + start_row == end_row:
+                break
+
+            selector_row = f"{selector_rows}:nth-child({index + start_row})"
+
+            data_row = {}
+            for colum_name, column_data in column.items():
+
+                selector_column = f"{selector_row} {column_data['selector']}"
+                data_type_column = column_data['data_type']
+
+                # Extract links
+                extra = column_data.get("extra", {})
+                if extra.get("is_link", False):
+                    value = self.get_attrib(selector_column, "href")
+                    data_row[colum_name] = value
+                    continue
+
+                # Extract texts
+                value = self.get_text(selector_column)
+
+                # Skip empty values
+                if not value:
+                    data_row[colum_name] = None
+                    continue
+
+                # Convert numeric fields
+                if data_type_column in [int, float]:
+                    value = value.replace(",", "").replace(
+                        "%", "").replace("$", "")
+
+                # Convert date format 2023-09-30
+                if data_type_column == dt:
+
+                    # Get format frome extra data
+                    format_date = column_data['extra']["format"]
+                    value = dt.strptime(value, format_date)
+
+                data_row[colum_name] = value
+
+            data.append(data_row)
+
+        return data
 
     def login(self) -> bool:
         """ Validate correct login and go to app page
@@ -662,65 +727,60 @@ class ScrapingDilutionTracker (WebScraping):
             ]
         """
 
-        selectors = {}
-        selectors["table"] = '#stickyTableHeadingExtraTopWhite + table tbody'
-        selectors["rows"] = f'{selectors["table"]} tr'
-        selectors["columns"] = {
-            "type": f'td:nth-child(1)',
-            "method": f'td:nth-child(2)',
-            "share_equivalent": f'td:nth-child(3)',
-            "price": f'td:nth-child(4)',
-            "warrants": f'td:nth-child(5)',
-            "offering_amt": f'td:nth-child(6)',
-            "bank": f'td:nth-child(7)',
-            "investors": f'td:nth-child(8)',
-            "date": f'td:nth-child(9)',
+        selector_rows = f'#stickyTableHeadingExtraTopWhite + table tr'
+        columns = {
+            "type": {
+                "selector": f'td:nth-child(1)',
+                "data_type": str,
+            },
+            "method": {
+                "selector": f'td:nth-child(2)',
+                "data_type": str,
+            },
+            "share_equivalent": {
+                "selector": f'td:nth-child(3)',
+                "data_type": int,
+            },
+            "pricer": {
+                "selector": f'td:nth-child(4)',
+                "data_type": float,
+            },
+            "warrants": {
+                "selector": f'td:nth-child(5)',
+                "data_type": int,
+            },
+            "offering_amt": {
+                "selector": f'td:nth-child(6)',
+                "data_type": int,
+            },
+            "bank": {
+                "selector": f'td:nth-child(7)',
+                "data_type": str,
+            },
+            "investors": {
+                "selector": f'td:nth-child(8)',
+                "data_type": str,
+            },
+            "date": {
+                "selector": f'td:nth-child(9)',
+                "data_type": dt,
+                "extra": {"format": "%Y-%m-%d %H:%M"}
+            },
         }
-        int_fields = ["share_equivalent", "warrants", "offering_amt"]
-        float_fields = ["price"]
-        numeric_fields = int_fields + float_fields
 
-        data = []
+        table_data = self.__get_table_data__(
+            selector_rows,
+            columns
+        )
 
-        # Get data from each row
-        rows_num = len(self.get_elems(selectors["rows"]))
-        for row_index in range(rows_num):
-
-            selector_row = f"{selectors["rows"]}:nth-child({row_index+1})"
-
-            # Get row data
-            row_data = {}
-            for column_name, selector in selectors["columns"].items():
-                
-                selector_column = f"{selector_row}:nth-child({row_index+1}) {selector}"
-                value = self.get_text(selector_column)
-                
-                # Format numeric fields
-                if column_name in numeric_fields:
-                    value = value.replace(",", "").replace("$", "")
-                    
-                    if column_name in int_fields:
-                        value = int(value)
-                    elif column_name in float_fields:
-                        value = float(value)
-                
-                # Format date field with format 2023-7-6 8:02
-                if column_name == "date":
-                    value = dt.strptime(value, "%Y-%m-%d %H:%M")
-                
-                row_data[column_name] = value
-
-            # Save data
-            data.append(row_data)
-
-        return data
+        return table_data
 
     def get_news_data(self) -> list:
         """ Get last 5 registers from news tab
 
         Returns:
             list: news data
-            
+
             Structure:
             [
                 {
@@ -734,61 +794,58 @@ class ScrapingDilutionTracker (WebScraping):
             ]
         """
 
-        selectors = {}
-        selectors["btn"] = '#result-tab-news'
-        selectors['table_wrapper'] = '.mb-5:last-child'
-        selectors['news_wrapper'] = f'{selectors["table_wrapper"]} .my-2'
-        selectors['items'] = {
-            "time_ago": 'span:nth-child(1)',
-            "datetime": 'span:nth-child(3)',
-            "link": "a",
-        }
-        
+        selector_btn = '#result-tab-news'
+        selector_rows = f'.mb-5:last-child .my-2'
 
-        data = []
+        columns = {
+            "time_ago": {
+                "selector": 'span:nth-child(1)',
+                "data_type": str,
+            },
+            "datetime": {
+                "selector": 'span:nth-child(3)',
+                "data_type": str,
+            },
+            "headline": {
+                "selector": 'a',
+                "data_type": str,
+            },
+            "link": {
+                "selector": 'a',
+                "data_type": str,
+                "extra": {"is_link": True}
+            }
+        }
 
         # Move to tab
-        self.click(selectors["btn"])
+        self.click(selector_btn)
         self.refresh_selenium()
 
-        # Get last 5 news
-        for index in range(2, 7):
+        # Get table data
+        table_data = self.__get_table_data__(
+            selector_rows,
+            columns,
+            start_row=2,
+            end_row=7
+        )
 
-            selector_news = f'{selectors["news_wrapper"]}:nth-child({index})'
-            selector_time_ago = f'{selector_news} {selectors["items"]["time_ago"]}'
-            selector_datetime = f'{selector_news} {selectors["items"]["datetime"]}'
-            selector_link = f'{selector_news} {selectors["items"]["link"]}'
+        # Separate time ago
+        for row in table_data:
 
-            # Get data
-            time_ago = self.get_text(selector_time_ago)
-            datetime = self.get_text(selector_datetime)
-            headline = self.get_text(selector_link)
-            link = self.get_attrib(selector_link, "href")
+            time_ago_parts = row["time_ago"].split(" ")
+            row["time_ago_number"] = int(time_ago_parts[0])
+            row["time_ago_label"] = time_ago_parts[1]
 
-            # Separate time ago
-            time_ago_parts = time_ago.split(" ")
-            time_ago_number = int(time_ago_parts[0])
-            time_ago_label = time_ago_parts[1]
+            del row["time_ago"]
 
-            # Convert formmat 11/17/2023, 9:04:00 AM  to datetime
-            datetime = dt.strptime(datetime, "%m/%d/%Y, %I:%M:%S %p")
+        return table_data
 
-            data.append({
-                "time_ago_number": time_ago_number,
-                "time_ago_label": time_ago_label,
-                "datetime": datetime,
-                "headline": headline,
-                "link": link,
-            })
-            
-        return data
-
-    def get_holders_data (self) -> list:
+    def get_holders_data(self) -> list:
         """ Get datqa from holders tab
 
         Returns:
             list: holders data
-            
+
             Structure:
             [
                 {
@@ -802,65 +859,51 @@ class ScrapingDilutionTracker (WebScraping):
                 },
                 ...
             ]
-            
-        """
-        
-        selectors = {}
-        selectors["btn"] = '#result-tab-inst-own'
-        
-        # Move to tab
-        self.click(selectors["btn"])
-        self.refresh_selenium()
-        
-        selectors['table_wrapper'] = '.instOwnTable'
-        selectors['holder_wrapper'] = f'{selectors["table_wrapper"]} tbody tr'
-        selectors['columns'] = {
-            "institution_name": "td:nth-child(1)",
-            "percentage": "td:nth-child(2)",
-            "shares": "td:nth-child(3)",
-            "change": "td:nth-child(4)",
-            "from": "td:nth-child(5)",
-            "efective": "td:nth-child(6)",
-            "field": "td:nth-child(7)",
-        }
-        
-        int_fields = ["shares", "warrants", "offering_amt"]
-        float_fields = ["percentage", "change"]
-        numeric_fields = int_fields + float_fields
-        date_fields = ["efective", "field"]
-        
-        data = []
 
-        holder_wrappers_num = len(self.get_elems (selectors['holder_wrapper']))
-        for index in range(holder_wrappers_num):
-            
-            selector_holder = f"{selectors['holder_wrapper']}:nth-child({index + 1})"
-            
-            data_row = {}
-            for column, selector in selectors['columns'].items():
-                
-                selector_column = f"{selector_holder} {selector}"
-                value = self.get_text(selector_column)
-                
-                if not value:
-                    data_row [column] = None
-                    continue
-                
-                # Convert numeric fields
-                if column in numeric_fields:
-                    value = value.replace(",", "").replace("%", "")
-                    
-                    if column in int_fields:
-                        value = int(value)
-                    elif column in float_fields:
-                        value = float(value)
-                  
-                # Convert date format 2023-09-30
-                if column in date_fields:
-                    value = dt.strptime(value, "%Y-%m-%d")
-                
-                data_row [column] = value
-            
-            data.append (data_row)
-            
-        return data
+        """
+
+        selector_btn = '#result-tab-inst-own'
+        selector_rows = f'.instOwnTable tbody tr'
+        columns = {
+            "institution_name": {
+                "selector": "td:nth-child(1)",
+                "data_type": str,
+            },
+            "percentage": {
+                "selector": "td:nth-child(2)",
+                "data_type": float,
+            },
+            "shares": {
+                "selector": "td:nth-child(3)",
+                "data_type": int,
+            },
+            "change": {
+                "selector": "td:nth-child(4)",
+                "data_type": float,
+            },
+            "from": {
+                "selector": "td:nth-child(5)",
+                "data_type": str,
+            },
+            "efective": {
+                "selector": "td:nth-child(6)",
+                "data_type": dt,
+                "extra": {"format": "%Y-%m-%d"}
+            },
+            "field": {
+                "selector": "td:nth-child(7)",
+                "data_type": dt,
+                "extra": {"format": "%Y-%m-%d"}
+            }
+        }
+
+        # Move to tab
+        self.click(selector_btn)
+        self.refresh_selenium()
+
+        table_data = self.__get_table_data__(
+            selector_rows,
+            columns
+        )
+
+        return table_data
