@@ -46,8 +46,6 @@ def main ():
                 
         logger.info (f">>> Scraping {tricker_name}...")
         
-        # TODO: CATCH ERRORS
-        
         # Load and get main data 
         scraper.load_company(tricker_key)
         logger.info("scraping premarket data...")

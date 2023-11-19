@@ -103,6 +103,17 @@ class ScrapingDilutionTracker (WebScraping):
                 break
 
         return columns_data
+    
+    def __delete_icons__ (self):
+        """ Delete extra/no required icons """
+        
+        selectors = ['.dtCardInfoIcon', '.dilutionRatingInfoIcon']
+        for selector in selectors:
+            self.driver.execute_script(f"""
+                document.querySelectorAll ('{selector}').forEach (icon => {{
+                    icon.remove()
+                }})
+            """)
 
     def login(self):
         """ Validate correct login and go to app page """
@@ -140,6 +151,10 @@ class ScrapingDilutionTracker (WebScraping):
 
         url = f"{self.pages["home"]}/app/search/{company}"
         self.set_page(url)
+        self.refresh_selenium()
+        
+        # Delete extra icons
+        self.__delete_icons__()
         self.refresh_selenium()
 
     def get_premarket_data(self) -> dict:
@@ -251,7 +266,7 @@ class ScrapingDilutionTracker (WebScraping):
         for header_index in range(headers_counters_num):
 
             # Get keys and info
-            selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
+            selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+1})"
             selector_counters = f"{selector_header} {selectors["header"]["info"]}"
             counters = self.get_elems(selector_counters)
 
