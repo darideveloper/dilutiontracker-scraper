@@ -334,8 +334,8 @@ class ScrapingDilutionTracker (WebScraping):
                 warrant: float,
                 convertible_preferred: float,
                 convertible_note: float,
-                equal: float,
-                s1: float,
+                equality_line: float,
+                s1_offering: float,
             }
 
         """
@@ -353,12 +353,14 @@ class ScrapingDilutionTracker (WebScraping):
             "#8CD2E8": "warrant",
             "#FFD876": "convertible_preferred",
             "#FFC107": "convertible_note",
-            "#BCC0C4": "equal",
-            "#D1D5D8": "s1",
-            
+            "#BCC0C4": "equality_line",
+            "#D1D5D8": "s1_offering",
         }
         
+        # Start with empty extra columns
         data = {}
+        for column_name in columns_colors.values():
+            data[column_name] = None
         
         # Get graph info
         graph_height = int(self.get_attrib(selectors["height"], "height"))
@@ -391,6 +393,7 @@ class ScrapingDilutionTracker (WebScraping):
             # Save column data
             data[column_name] = column_value
             
+
         return data 
 
     def get_cash_data(self) -> list:
@@ -478,8 +481,8 @@ if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
-    scraping_dilution_tracker.load_company("OPTX?a=3kxbzw")
+    scraping_dilution_tracker.load_company("CYTO?a=3kxbzw")
     # premarket_data = scraping_dilution_tracker.get_premarket_data()
-    # historical_data = scraping_dilution_tracker.get_historical_data()
-    cash_data = scraping_dilution_tracker.get_cash_data()
+    historical_data = scraping_dilution_tracker.get_historical_data()
+    # cash_data = scraping_dilution_tracker.get_cash_data()
     print()
