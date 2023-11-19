@@ -501,3 +501,84 @@ class ScrapingDilutionTracker (WebScraping):
             data["m"] = numbers[0]
     
         return data
+    
+    def get_extra_data (self) -> list:
+        
+        selectors = {
+            "content_section": "#dashContentWrapper > div",
+            "extras_wrapper": '.my-3',
+            "title": '.heading-filing-category',
+            "table": {
+                "wrapper": '.card',
+                "title": "h5",
+                "status": ".opacity-7",
+                "data": {
+                    "wrapper": "ul > li",
+                    "item": "span:first-child",
+                    "value": "span:last-child",
+                }
+            }
+            
+        }
+        
+        data = []
+        
+        # Identify position of first extra table
+        first_extra_index = 0
+        content_sections_num = len(self.get_elems(selectors["content_section"]))
+        for section_index in range(content_sections_num):
+            selector_section = f"{selectors["content_section"]}:nth-child({section_index+1}){selectors["extras_wrapper"]}"
+            section = self.get_elems(selector_section)
+            if section:
+                first_extra_index = section_index
+                break     
+        
+        # Loop each extra table
+        extras_num = len(self.get_elems(selectors["extras_wrapper"]))
+        for extra_index in range(extras_num):
+            
+            # Get extra title
+            selector_extra = f"{selectors["extras_wrapper"]}:nth-child({extra_index+first_extra_index+1})"
+            selector_title = f"{selector_extra} {selectors["title"]}"
+            title = self.get_text(selector_title)
+            
+            # Loop data tables
+            selectors_table = selectors["table"]
+            selector_tables = f"{selector_extra} {selectors_table["wrapper"]}"
+            tables_num = len(self.get_elems(selector_tables))
+            for table_index in range(tables_num):
+                
+                selector_table = f"{selector_tables}:nth-child({table_index+1})"
+                
+                # Get table title
+                selector_table_title = f"{selector_table} {selectors_table["title"]}"
+                table_title = self.get_text(selector_table_title)
+                
+                # Get table status
+                selector_table_status = f"{selector_table} {selectors_table["status"]}" 
+                table_status = self.get_text(selector_table_status)
+                
+                # Get table info
+                selector_rows = f"{selector_table} {selectors_table["data"]["wrapper"]}"
+                rows_num = len(self.get_elems(selector_rows))
+                for row_index in range(rows_num):
+                    
+                    selector_row = f"{selector_rows}:nth-child({row_index+1})"
+                    
+                    # Get row data
+                    selector_item = f"{selector_row} {selectors_table["data"]["item"]}"
+                    selector_value = f"{selector_row} {selectors_table["data"]["value"]}"
+                    item = self.get_text(selector_item)
+                    value = self.get_text(selector_value)
+                    
+                    # Save data
+                    data.append ({
+                        "origin": title,
+                        "status": table_status,
+                        "name": table_title,
+                        "item": item,
+                        "value": value,
+                        "index": table_index + 1,
+                    })               
+        
+        return data

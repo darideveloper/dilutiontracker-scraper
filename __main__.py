@@ -61,7 +61,8 @@ def main ():
         historical_data = scraper.get_historical_data()
         logger.info("scraping cash data...")
         cash_data = scraper.get_cash_data()
-        
+        logger.info("scraping extra data...")
+        extra_data = scraper.get_extra_data()
         # TODO: save data in database
         
         # End in debug mode
