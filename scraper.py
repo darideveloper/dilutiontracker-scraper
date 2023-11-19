@@ -504,16 +504,3 @@ class ScrapingDilutionTracker (WebScraping):
             data["m"] = numbers[0]
     
         return data
-
-if __name__ == "__main__":
-    # Start scraping (main worlflow)
-    scraping_dilution_tracker = ScrapingDilutionTracker()
-    scraping_dilution_tracker.login()
-    scraping_dilution_tracker.load_company("AWSDASD")
-    premarket_data = scraping_dilution_tracker.get_premarket_data()
-    if not premarket_data["found"]:
-        print(premarket_data["dilution_data"])
-        quit()
-    # historical_data = scraping_dilution_tracker.get_historical_data()
-    # cash_data = scraping_dilution_tracker.get_cash_data()
-    print()
