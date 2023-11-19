@@ -614,3 +614,39 @@ class ScrapingDilutionTracker (WebScraping):
                     })               
         
         return data
+    
+    def get_complete_offering_data (self) -> list:
+        
+        selectors = {}
+        selectors["table"] = '#stickyTableHeadingExtraTopWhite + table tbody'
+        selectors["rows"] = f'{selectors["table"]} tr'
+        selectors["columns"] = {
+            "type": f'td:nth-child(1)',
+            "method": f'td:nth-child(2)',
+            "share_equivalent": f'td:nth-child(3)',
+            "price": f'td:nth-child(4)',
+            "warrants": f'td:nth-child(5)',
+            "offering_amt": f'td:nth-child(6)',
+            "bank": f'td:nth-child(7)',
+            "investors": f'td:nth-child(8)',
+            "date": f'td:nth-child(9)',
+        }
+        
+        data = []
+        
+        # Get data from each row
+        rows_num = len(self.get_elems(selectors["rows"]))
+        for row_index in range(rows_num):
+            
+            selector_row = f"{selectors["rows"]}:nth-child({row_index+1})"
+            
+            # Get row data
+            row_data = {}
+            for column_name, selector in selectors["columns"].items():
+                selector_column = f"{selector_row}:nth-child({row_index+1}) {selector}"
+                row_data[column_name] = self.get_text(selector_column)
+                
+            # Save data
+            data.append(row_data)
+        
+        return data

@@ -63,6 +63,9 @@ def main ():
         cash_data = scraper.get_cash_data()
         logger.info("scraping extra data...")
         extra_data = scraper.get_extra_data()
+        logger.info("scraping complete offering data...")
+        complete_offering_data = scraper.get_complete_offering_data()
+        
         # TODO: save data in database
         
         # End in debug mode
