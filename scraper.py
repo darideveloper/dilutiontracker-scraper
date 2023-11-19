@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime as dt
 from dotenv import load_dotenv
 from logs import logger
@@ -75,7 +76,7 @@ class ScrapingDilutionTracker (WebScraping):
         """
 
         # Loop each column
-        columns_num = len(self.get_elems(selector_column))
+        columns_num = len(self.get_elems(selector_columns_wrapper))
         columns_data = []
         for column_index in range(columns_num):
 
@@ -97,7 +98,7 @@ class ScrapingDilutionTracker (WebScraping):
             try:
                 date = dt.strptime(column_name, "%m/%d/%Y")
             except:
-                data = dt.now()
+                date = dt.now()
                 last_column = True
 
             # Save column data
@@ -328,8 +329,13 @@ class ScrapingDilutionTracker (WebScraping):
                         "date": datetime,
                         "hos": float,
                     },
-                    ...
-                ]
+                ].
+                atm: float,
+                warrant: float,
+                convertible_preferred: float,
+                convertible_note: float,
+                equal: float,
+                s1: float,
             }
 
         """
@@ -387,12 +393,93 @@ class ScrapingDilutionTracker (WebScraping):
             
         return data 
 
+    def get_cash_data(self) -> list:
+        """ Get cash from main columns in graph
+
+        Returns:
+            list: historical data
+            Structure:
+            {
+                columns_data:   [
+                    {
+                        "id": int,
+                        "date": datetime,
+                        "hos": float,
+                    },
+                    ...
+                ]
+            }
+
+        """
+        
+        selectors = {}
+        selectors["graph"] = '.results-cash-bar-chart' # graph wrapper
+        selectors["columns_wrapper"] = f'{selectors["graph"]} .yAxis + g .recharts-layer'
+        selectors["column"] = 'path'
+        selectors["values_wrapper"] = f'{selectors["graph"]} .yAxis .recharts-cartesian-axis-tick'
+        selectors["height"] = f'{selectors["values_wrapper"]}:last-child > text'
+        selectors["max_value"] = f'{selectors["values_wrapper"]}:last-child > text tspan'
+        selectors["min_value"] = selectors["max_value"].replace("last-child", "first-child")
+        selectors["extra_columns"] = {
+            "prorated_operating": f'{selectors["graph"]} [name="OpCF"]:not([fill="none"])',
+            "capital_rise": f'{selectors["graph"]} [name="Cap Raise"]:not([fill="none"])',
+            "current_cash_sheet": f'{selectors["graph"]} [name="Current Est"]:not([fill="none"])',                        
+        }
+        selectors["description"] = '#results-os-chart + p + p'
+        
+        data = {}
+        
+        # Get graph info
+        graph_height = int(self.get_attrib(selectors['height'], "height"))
+        max_value = float(self.get_text(selectors['max_value']))
+        min_value = float(self.get_text(selectors['min_value']))
+        range_value = max_value + abs(min_value)
+
+        # Data from regylar columns
+        data["columns_data"] = self.__get_columns_data__(
+            selectors["columns_wrapper"],
+            selectors["column"],
+            graph_height,
+            range_value,
+        )
+    
+        # Data from extra columns
+        for column_name, selector in selectors["extra_columns"].items():
+            
+            # Get and validate column height
+            column_height_str = self.get_attrib(selector, "height")
+            if column_height_str:
+                # Calculate value
+                column_height = float(column_height_str)
+                column_value = self.__get_column_value__ (column_height, graph_height, range_value)
+            else:
+                # Same value
+                column_value = None
+                
+            data[column_name] = column_value
+                
+        # Get data from description
+        data["cash_description"] = self.get_text(selectors["description"])
+        data["months_of_cash"] = None
+        data["quarterly_cash_burn_m"] = None
+        data["current_cash_m"] = None
+        data["m"] = None
+        numbers = re.findall(r'-?\d+(\.\d+)?', data["cash_description"])
+        if len (numbers) == 3:
+            data["months_of_cash"] = numbers[0]
+            data["quarterly_cash_burn_m"] = numbers[1]
+            data["current_cash_m"] = numbers[2]
+        elif len (numbers) == 1:
+            data["m"] = numbers[0]
+    
+        return data
 
 if __name__ == "__main__":
     # Start scraping (main worlflow)
     scraping_dilution_tracker = ScrapingDilutionTracker()
     scraping_dilution_tracker.login()
-    scraping_dilution_tracker.load_company("CYTO?a=3kxbzw")
-    premarket_data = scraping_dilution_tracker.get_premarket_data()
-    historical_data = scraping_dilution_tracker.get_historical_data()
+    scraping_dilution_tracker.load_company("OPTX?a=3kxbzw")
+    # premarket_data = scraping_dilution_tracker.get_premarket_data()
+    # historical_data = scraping_dilution_tracker.get_historical_data()
+    cash_data = scraping_dilution_tracker.get_cash_data()
     print()
