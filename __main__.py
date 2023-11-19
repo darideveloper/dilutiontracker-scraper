@@ -1,5 +1,6 @@
 import os
 import csv
+from time import sleep
 from dotenv import load_dotenv
 from logs import logger
 from scraping.scraper_dt import ScrapingDilutionTracker
@@ -65,6 +66,8 @@ def main ():
         extra_data = scraper.get_extra_data()
         logger.info("scraping complete offering data...")
         complete_offering_data = scraper.get_complete_offering_data()
+        logger.info("scraping news data...")
+        news_data = scraper.get_news_data()
         
         # TODO: save data in database
         
@@ -72,6 +75,10 @@ def main ():
         if DEBUG and DEBUG_TRICKERS == tricker_num:
             logger.info ("Debug mode: ending...")
             break
+        
+        # Wait before next tricker
+        logger.info ("waiting 60 seconds...")
+        sleep (60)
 
 if __name__ == '__main__':
     main()
