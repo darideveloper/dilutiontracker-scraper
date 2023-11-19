@@ -56,14 +56,14 @@ class ScrapingDilutionTracker (WebScraping):
             dict: columns data
             
             Structure:
-                [
-                    {
-                        "id": int,
-                        "date": datetime,
-                        "hos": float,
-                    },
-                    ...
-                ]
+            [
+                {
+                    "id": int,
+                    "date": datetime,
+                    "hos": float,
+                },
+                ...
+            ]
         """
 
         # Loop each column
@@ -115,8 +115,12 @@ class ScrapingDilutionTracker (WebScraping):
                 }})
             """)
 
-    def login(self):
-        """ Validate correct login and go to app page """
+    def login(self) -> bool:
+        """ Validate correct login and go to app page
+
+        Returns:
+            bool: True if login success
+        """
 
         selectors = {
             "btn_app": 'nav .btn-deepred',
@@ -162,27 +166,28 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             dict: premarket data
+            
             Structure:
-                {
-                    found: bool,
-                    name: str,
-                    sector: str,
-                    industry: str,
-                    mkt_cap: float,
-                    float_cap: float,
-                    est_cash_sh: float,
-                    t25_inst_own: float,
-                    si: float,
-                    description_company: str,
-                    dilution_data: str,
-                    overall_risk: str,
-                    offering_abillity: str,
-                    dilution_amt_ex_shelf: str,
-                    historical: str
-                    cash_need: str,
-                    out_take: str,
-                    update_info: str,                    
-                }
+            {
+                found: bool,
+                name: str,
+                sector: str,
+                industry: str,
+                mkt_cap: float,
+                float_cap: float,
+                est_cash_sh: float,
+                t25_inst_own: float,
+                si: float,
+                description_company: str,
+                dilution_data: str,
+                overall_risk: str,
+                offering_abillity: str,
+                dilution_amt_ex_shelf: str,
+                historical: str
+                cash_need: str,
+                out_take: str,
+                update_info: str,                    
+            }
         """
         
         selectors = {
@@ -346,6 +351,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             list: historical data
+            
             Structure:
             {
                 columns_data:   [
@@ -426,6 +432,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             list: historical data
+            
             Structure:
             {
                 columns_data:   [
@@ -434,8 +441,15 @@ class ScrapingDilutionTracker (WebScraping):
                         "date": datetime,
                         "hos": float,
                     },
-                    ...
-                ]
+                ].
+                prorated_operating: float,
+                capital_rise: float,
+                current_cash_sheet: float,
+                cash_description: str,
+                months_of_cash: float,
+                quarterly_cash_burn_m: float,
+                current_cash_m: float,
+                m: float,
             }
 
         """
@@ -503,6 +517,24 @@ class ScrapingDilutionTracker (WebScraping):
         return data
     
     def get_extra_data (self) -> list:
+        """ Get extra data from company page (details tables)
+
+        Returns:
+            list: extra data
+            
+            Structure:
+            [
+                {
+                    "origin": str,
+                    "status": str,
+                    "name": str,
+                    "item": str,
+                    "value": str,
+                    "index": int,
+                },
+                ...
+            ]
+        """
         
         selectors = {
             "content_section": "#dashContentWrapper > div",
