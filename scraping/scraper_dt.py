@@ -704,11 +704,11 @@ class ScrapingDilutionTracker (WebScraping):
                     elif column_name in float_fields:
                         value = float(value)
                 
-                row_data[column_name] = value
-                
                 # Format date field with format 2023-7-6 8:02
                 if column_name == "date":
-                    row_data[column_name] = dt.strptime(value, "%Y-%m-%d %H:%M")
+                    value = dt.strptime(value, "%Y-%m-%d %H:%M")
+                
+                row_data[column_name] = value
 
             # Save data
             data.append(row_data)
@@ -716,7 +716,7 @@ class ScrapingDilutionTracker (WebScraping):
         return data
 
     def get_news_data(self) -> list:
-        """ Get last 5 news data
+        """ Get last 5 registers from news tab
 
         Returns:
             list: news data
@@ -747,7 +747,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         data = []
 
-        # Move to news tab
+        # Move to tab
         self.click(selectors["btn"])
         self.refresh_selenium()
 
@@ -780,5 +780,87 @@ class ScrapingDilutionTracker (WebScraping):
                 "headline": headline,
                 "link": link,
             })
+            
+        return data
+
+    def get_holders_data (self) -> list:
+        """ Get datqa from holders tab
+
+        Returns:
+            list: holders data
+            
+            Structure:
+            [
+                {
+                    "institution_name": str,
+                    "percentage": float,
+                    "shares": int,
+                    "change": float,
+                    "from": str,
+                    "efective": datetime,
+                    "field": datetime,
+                },
+                ...
+            ]
+            
+        """
+        
+        selectors = {}
+        selectors["btn"] = '#result-tab-inst-own'
+        
+        # Move to tab
+        self.click(selectors["btn"])
+        self.refresh_selenium()
+        
+        selectors['table_wrapper'] = '.instOwnTable'
+        selectors['holder_wrapper'] = f'{selectors["table_wrapper"]} tbody tr'
+        selectors['columns'] = {
+            "institution_name": "td:nth-child(1)",
+            "percentage": "td:nth-child(2)",
+            "shares": "td:nth-child(3)",
+            "change": "td:nth-child(4)",
+            "from": "td:nth-child(5)",
+            "efective": "td:nth-child(6)",
+            "field": "td:nth-child(7)",
+        }
+        
+        int_fields = ["shares", "warrants", "offering_amt"]
+        float_fields = ["percentage", "change"]
+        numeric_fields = int_fields + float_fields
+        date_fields = ["efective", "field"]
+        
+        data = []
+
+        holder_wrappers_num = len(self.get_elems (selectors['holder_wrapper']))
+        for index in range(holder_wrappers_num):
+            
+            selector_holder = f"{selectors['holder_wrapper']}:nth-child({index + 1})"
+            
+            data_row = {}
+            for column, selector in selectors['columns'].items():
+                
+                selector_column = f"{selector_holder} {selector}"
+                value = self.get_text(selector_column)
+                
+                if not value:
+                    data_row [column] = None
+                    continue
+                
+                # Convert numeric fields
+                if column in numeric_fields:
+                    value = value.replace(",", "").replace("%", "")
+                    
+                    if column in int_fields:
+                        value = int(value)
+                    elif column in float_fields:
+                        value = float(value)
+                  
+                # Convert date format 2023-09-30
+                if column in date_fields:
+                    value = dt.strptime(value, "%Y-%m-%d")
+                
+                data_row [column] = value
+            
+            data.append (data_row)
             
         return data

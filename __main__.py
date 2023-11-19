@@ -68,6 +68,8 @@ def main ():
         complete_offering_data = scraper.get_complete_offering_data()
         logger.info("scraping news data...")
         news_data = scraper.get_news_data()
+        logger.info("scraping holders data...")
+        holders_data = scraper.get_holders_data()
         
         # TODO: save data in database
         
