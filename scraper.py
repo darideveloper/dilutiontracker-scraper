@@ -1,33 +1,24 @@
-import os
 import re
 from datetime import datetime as dt
-from dotenv import load_dotenv
-from logs import logger
 from scraping.web_scraping import WebScraping
-from selenium.webdriver.common.by import By
-
-# read env variables
-load_dotenv()
-CHROME_FOLDER = os.getenv('CHROME_FOLDER')
-
 
 class ScrapingDilutionTracker (WebScraping):
 
-    def __init__(self):
+    def __init__(self, chrome_folder:str):
+        """ Connect to WebScraping class and start chrome instance
+
+        Args:
+            chrome_folder (str): chrome data folder path
+        """
 
         # Scraping pages
         self.pages = {
             "home": "https://dilutiontracker.com"
         }
-
-        # Validate env variables
-        if CHROME_FOLDER is None:
-            logger.error('CHROME_FOLDER env variable is not set')
-            quit()
-
+        
         # Start chrome instance with chrome data
         super().__init__(
-            chrome_folder=CHROME_FOLDER,
+            chrome_folder=chrome_folder,
             start_killing=True,
         )
         
@@ -120,8 +111,6 @@ class ScrapingDilutionTracker (WebScraping):
             "btn_app": 'nav .btn-deepred',
         }
 
-        error_login = "Login failed. Close the program, open chrome, login manually and try again"
-
         # Load home page
         self.set_page(self.pages["home"])
         self.refresh_selenium()
@@ -129,8 +118,7 @@ class ScrapingDilutionTracker (WebScraping):
         # Validte if exists "go to app" button
         button_text = self.get_text(selectors["btn_app"]).lower().strip()
         if button_text != "go to app":
-            logger.error(error_login)
-            quit()
+            return False
 
         # Click on "go to app" button
         old_page = self.driver.current_url
@@ -139,10 +127,9 @@ class ScrapingDilutionTracker (WebScraping):
         # Validate page change
         current_page = self.driver.current_url
         if old_page == current_page:
-            logger.error(error_login)
-            quit()
+            return False
 
-        logger.info("Login successful")
+        return True
 
     def load_company(self, company: str):
         """ Load company page
@@ -182,9 +169,7 @@ class ScrapingDilutionTracker (WebScraping):
                     update_info: str,                    
                 }
         """
-
-        logger.info("scraping premarket data...")
-
+        
         selectors = {
             "not_found": '#filingNotInCoverageIcon + div',
             "name": 'h1',
@@ -262,15 +247,12 @@ class ScrapingDilutionTracker (WebScraping):
                 data["industry"] = info
 
         # Get headers counters
-        headers_counters_num = len(self.get_elems(
-            selectors["header"]["wrapper_counters"]))
+        headers_counters_num = len(self.get_elems(selectors["header"]["wrapper_counters"]))
         for header_index in range(headers_counters_num):
 
             # Get keys and info
-            selector_header = f"{
-                selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
-            selector_counters = f"{selector_header} {
-                selectors["header"]["info"]}"
+            selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+2})"
+            selector_counters = f"{selector_header} {selectors["header"]["info"]}"
             counters = self.get_elems(selector_counters)
 
             key = counters[0].text.lower()

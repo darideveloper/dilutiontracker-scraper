@@ -7,30 +7,50 @@ load_dotenv()
 
 DEBUG = os.getenv("DEBUG") == "True"
 DEBUG_TRICKERS = int(os.getenv("DEBUG_TRICKERS"))
+CHROME_FOLDER = os.getenv('CHROME_FOLDER')
 
 def main ():
     
-    # Get tickers from csv
+    # Validate chrome folder
+    if CHROME_FOLDER is None or not os.path.isdir(CHROME_FOLDER):
+        logger.error('CHROME_FOLDER not found env variable is not set')
+        quit()
+    
+    # Quit if csv not found
     current_path = os.path.dirname(__file__)
     csv_path = os.path.join(current_path, 'tickers.csv')
+    if not os.path.isfile(csv_path):
+        logger.error('tickers.csv not found. Create a tickers.csv file with the tickers to scrape (alias, key)')
+        quit()
+    
+    # Get tickers from csv
     with open (csv_path, 'r') as file:
         reader = csv.reader(file)
         tickers = list(reader)
         
-    # Scraper data
-    scraper = ScrapingDilutionTracker()
+    # Connect to dilution tracker
+    scraper = ScrapingDilutionTracker(CHROME_FOLDER)
+    
+    # End if login failed
+    is_logged = scraper.login()
+    if is_logged:
+        logger.info('Login success')
+    else:
+        logger.error('Login failed. Close the program, open chrome, login manually and try again')
+        quit ()
+    
     tricker_num = 0
-    for tricker_name, tricker_key in tickers[1:]:
+    for tricker_name, tricker_key in tickers:
         
         tricker_num += 1
                 
-        logger.info (f"Scraping {tricker_name}...")
+        logger.info (f">>> Scraping {tricker_name}...")
         
         # TODO: CATCH ERRORS
         
         # Load and get main data 
-        scraper.login()
         scraper.load_company(tricker_key)
+        logger.info("scraping premarket data...")
         premarket_data = scraper.get_premarket_data()
         
         # Validate data found
@@ -39,7 +59,9 @@ def main ():
             continue
             
         # Scraper secondary data
+        logger.info("scraping historical data...")
         historical_data = scraper.get_historical_data()
+        logger.info("scraping cash data...")
         cash_data = scraper.get_cash_data()
         
         # TODO: save data in database
