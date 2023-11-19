@@ -2,9 +2,10 @@ import re
 from datetime import datetime as dt
 from scraping.web_scraping import WebScraping
 
+
 class ScrapingDilutionTracker (WebScraping):
 
-    def __init__(self, chrome_folder:str):
+    def __init__(self, chrome_folder: str):
         """ Connect to WebScraping class and start chrome instance
 
         Args:
@@ -15,14 +16,14 @@ class ScrapingDilutionTracker (WebScraping):
         self.pages = {
             "home": "https://dilutiontracker.com"
         }
-        
+
         # Start chrome instance with chrome data
         super().__init__(
             chrome_folder=chrome_folder,
             start_killing=True,
         )
-        
-    def __get_column_value__ (self, column_height:float, graph_height:int, max_value:float ) -> float:
+
+    def __get_column_value__(self, column_height: float, graph_height: int, max_value: float) -> float:
         """ Get column value from graph
 
         Args:
@@ -39,11 +40,11 @@ class ScrapingDilutionTracker (WebScraping):
         value = value * 100
         value = round(value, 2)
         value = value / 100
-        
-        return value 
 
-    def __get_columns_data__ (self, selector_columns_wrapper:str, selector_column:str,
-                             graph_height:int, max_value:float) -> list:
+        return value
+
+    def __get_columns_data__(self, selector_columns_wrapper: str, selector_column: str,
+                             graph_height: int, max_value: float) -> list:
         """ Get regular columns data from graph
 
         Args:
@@ -54,7 +55,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             dict: columns data
-            
+
             Structure:
             [
                 {
@@ -71,7 +72,8 @@ class ScrapingDilutionTracker (WebScraping):
         columns_data = []
         for column_index in range(columns_num):
 
-            selector_current_column = f"{selector_columns_wrapper}:nth-child({column_index+1}) {selector_column}"
+            selector_current_column = f"{
+                selector_columns_wrapper}:nth-child({column_index+1}) {selector_column}"
 
             # Skip empty columns
             column = self.get_elems(selector_current_column)
@@ -80,9 +82,11 @@ class ScrapingDilutionTracker (WebScraping):
 
             # Get data from current column
             column_name = self.get_attrib(selector_current_column, "name")
-            column_height = float(self.get_attrib(selector_current_column, "height"))   
+            column_height = float(self.get_attrib(
+                selector_current_column, "height"))
 
-            column_value = self.__get_column_value__ (column_height, graph_height, max_value)
+            column_value = self.__get_column_value__(
+                column_height, graph_height, max_value)
 
             # Format date and detect when columns ends
             last_column = False
@@ -98,15 +102,15 @@ class ScrapingDilutionTracker (WebScraping):
                 "date": date,
                 "hos": column_value,
             })
-            
+
             if last_column:
                 break
 
         return columns_data
-    
-    def __delete_icons__ (self):
+
+    def __delete_icons__(self):
         """ Delete extra/no required icons """
-        
+
         selectors = ['.dtCardInfoIcon', '.dilutionRatingInfoIcon']
         for selector in selectors:
             self.driver.execute_script(f"""
@@ -156,7 +160,7 @@ class ScrapingDilutionTracker (WebScraping):
         url = f"{self.pages["home"]}/app/search/{company}"
         self.set_page(url)
         self.refresh_selenium()
-        
+
         # Delete extra icons
         self.__delete_icons__()
         self.refresh_selenium()
@@ -166,7 +170,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             dict: premarket data
-            
+
             Structure:
             {
                 found: bool,
@@ -189,7 +193,7 @@ class ScrapingDilutionTracker (WebScraping):
                 update_info: str,                    
             }
         """
-        
+
         selectors = {
             "not_found": '#filingNotInCoverageIcon + div',
             "name": 'h1',
@@ -214,7 +218,7 @@ class ScrapingDilutionTracker (WebScraping):
             },
             "update_info": "#results-os-chart > p:nth-child(2)"
         }
-        
+
         # Initial data
         data = {
             "found": True,
@@ -241,7 +245,7 @@ class ScrapingDilutionTracker (WebScraping):
         not_found = self.get_text(selectors["not_found"])
         if not_found:
             data["dilution_data"] = not_found
-            data["found"] = False   
+            data["found"] = False
             return data
 
         # Get company name
@@ -267,12 +271,15 @@ class ScrapingDilutionTracker (WebScraping):
                 data["industry"] = info
 
         # Get headers counters
-        headers_counters_num = len(self.get_elems(selectors["header"]["wrapper_counters"]))
+        headers_counters_num = len(self.get_elems(
+            selectors["header"]["wrapper_counters"]))
         for header_index in range(headers_counters_num):
 
             # Get keys and info
-            selector_header = f"{selectors["header"]["wrapper_counters"]}:nth-child({header_index+1})"
-            selector_counters = f"{selector_header} {selectors["header"]["info"]}"
+            selector_header = f"{
+                selectors["header"]["wrapper_counters"]}:nth-child({header_index+1})"
+            selector_counters = f"{selector_header} {
+                selectors["header"]["info"]}"
             counters = self.get_elems(selector_counters)
 
             key = counters[0].text.lower()
@@ -329,8 +336,10 @@ class ScrapingDilutionTracker (WebScraping):
             # Get each line of our take
             selector_our_take = f"{
                 selectors["our_take"]["wrappers"]}:nth-child({our_take_index+2})"
-            selector_datetime = f"{selector_our_take} {selectors["our_take"]["datetime"]}"
-            selector_info = f"{selector_our_take} {selectors["our_take"]["info"]}"
+            selector_datetime = f"{selector_our_take} {
+                selectors["our_take"]["datetime"]}"
+            selector_info = f"{selector_our_take} {
+                selectors["our_take"]["info"]}"
 
             datetime = self.get_text(selector_datetime).lower()
             info = self.get_text(selector_info).lower()
@@ -351,7 +360,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         Returns:
             list: historical data
-            
+
             Structure:
             {
                 columns_data:   [
@@ -370,7 +379,7 @@ class ScrapingDilutionTracker (WebScraping):
             }
 
         """
-        
+
         selectors = {
             "columns_wrapper": '#results-os-chart .recharts-bar-rectangles .recharts-bar-rectangle',
             "column": 'path',
@@ -378,7 +387,7 @@ class ScrapingDilutionTracker (WebScraping):
             "max_value": '.yAxis .recharts-cartesian-axis-tick:last-child > text tspan',
             "extra_columns": '#results-os-chart path[name="Fully Diluted"]'
         }
-        
+
         columns_colors = {
             "#2CA1CF": "atm",
             "#8CD2E8": "warrant",
@@ -387,12 +396,12 @@ class ScrapingDilutionTracker (WebScraping):
             "#BCC0C4": "equality_line",
             "#D1D5D8": "s1_offering",
         }
-        
+
         # Start with empty extra columns
         data = {}
         for column_name in columns_colors.values():
             data[column_name] = None
-        
+
         # Get graph info
         graph_height = int(self.get_attrib(selectors["height"], "height"))
         max_value = float(self.get_text(selectors["max_value"]))
@@ -404,35 +413,35 @@ class ScrapingDilutionTracker (WebScraping):
             graph_height,
             max_value,
         )
-    
+
         # Data frome extra columns
         extra_columns = self.get_elems(selectors["extra_columns"])
         for column in extra_columns:
-            
+
             # Get color
             column_color = column.get_attribute("fill")
             column_height = float(column.get_attribute("height"))
-            
+
             # Get column value
-            column_value = self.__get_column_value__ (column_height, graph_height, max_value)
-            
+            column_value = self.__get_column_value__(
+                column_height, graph_height, max_value)
+
             # Identify name with color
             column_name = columns_colors.get(column_color, None)
             if not column_name:
                 continue
-            
+
             # Save column data
             data[column_name] = column_value
-            
 
-        return data 
+        return data
 
     def get_cash_data(self) -> list:
         """ Get cash from main columns in graph
 
         Returns:
             list: historical data
-            
+
             Structure:
             {
                 columns_data:   [
@@ -453,24 +462,29 @@ class ScrapingDilutionTracker (WebScraping):
             }
 
         """
-        
+
         selectors = {}
-        selectors["graph"] = '.results-cash-bar-chart' # graph wrapper
-        selectors["columns_wrapper"] = f'{selectors["graph"]} .yAxis + g .recharts-layer'
+        selectors["graph"] = '.results-cash-bar-chart'  # graph wrapper
+        selectors["columns_wrapper"] = f'{
+            selectors["graph"]} .yAxis + g .recharts-layer'
         selectors["column"] = 'path'
-        selectors["values_wrapper"] = f'{selectors["graph"]} .yAxis .recharts-cartesian-axis-tick'
-        selectors["height"] = f'{selectors["values_wrapper"]}:last-child > text'
-        selectors["max_value"] = f'{selectors["values_wrapper"]}:last-child > text tspan'
-        selectors["min_value"] = selectors["max_value"].replace("last-child", "first-child")
+        selectors["values_wrapper"] = f'{
+            selectors["graph"]} .yAxis .recharts-cartesian-axis-tick'
+        selectors["height"] = f'{
+            selectors["values_wrapper"]}:last-child > text'
+        selectors["max_value"] = f'{
+            selectors["values_wrapper"]}:last-child > text tspan'
+        selectors["min_value"] = selectors["max_value"].replace(
+            "last-child", "first-child")
         selectors["extra_columns"] = {
             "prorated_operating": f'{selectors["graph"]} [name="OpCF"]:not([fill="none"])',
             "capital_rise": f'{selectors["graph"]} [name="Cap Raise"]:not([fill="none"])',
-            "current_cash_sheet": f'{selectors["graph"]} [name="Current Est"]:not([fill="none"])',                        
+            "current_cash_sheet": f'{selectors["graph"]} [name="Current Est"]:not([fill="none"])',
         }
         selectors["description"] = '#results-os-chart + p + p'
-        
+
         data = {}
-        
+
         # Get graph info
         graph_height = int(self.get_attrib(selectors['height'], "height"))
         max_value = float(self.get_text(selectors['max_value']))
@@ -484,22 +498,23 @@ class ScrapingDilutionTracker (WebScraping):
             graph_height,
             range_value,
         )
-    
+
         # Data from extra columns
         for column_name, selector in selectors["extra_columns"].items():
-            
+
             # Get and validate column height
             column_height_str = self.get_attrib(selector, "height")
             if column_height_str:
                 # Calculate value
                 column_height = float(column_height_str)
-                column_value = self.__get_column_value__ (column_height, graph_height, range_value)
+                column_value = self.__get_column_value__(
+                    column_height, graph_height, range_value)
             else:
                 # Same value
                 column_value = None
-                
+
             data[column_name] = column_value
-                
+
         # Get data from description
         data["cash_description"] = self.get_text(selectors["description"])
         data["months_of_cash"] = None
@@ -507,21 +522,21 @@ class ScrapingDilutionTracker (WebScraping):
         data["current_cash_m"] = None
         data["m"] = None
         numbers = re.findall(r'-?\d+(\.\d+)?', data["cash_description"])
-        if len (numbers) == 3:
+        if len(numbers) == 3:
             data["months_of_cash"] = numbers[0]
             data["quarterly_cash_burn_m"] = numbers[1]
             data["current_cash_m"] = numbers[2]
-        elif len (numbers) == 1:
+        elif len(numbers) == 1:
             data["m"] = numbers[0]
-    
+
         return data
-    
-    def get_extra_data (self) -> list:
+
+    def get_extra_data(self) -> list:
         """ Get extra data from company page (details tables)
 
         Returns:
             list: extra data
-            
+
             Structure:
             [
                 {
@@ -535,7 +550,7 @@ class ScrapingDilutionTracker (WebScraping):
                 ...
             ]
         """
-        
+
         selectors = {
             "content_section": "#dashContentWrapper > div",
             "extras_wrapper": '.my-3',
@@ -550,73 +565,103 @@ class ScrapingDilutionTracker (WebScraping):
                     "value": "span:last-child",
                 }
             }
-            
+
         }
-        
+
         data = []
-        
+
         # Identify position of first extra table
         first_extra_index = 0
-        content_sections_num = len(self.get_elems(selectors["content_section"]))
+        content_sections_num = len(
+            self.get_elems(selectors["content_section"]))
         for section_index in range(content_sections_num):
-            selector_section = f"{selectors["content_section"]}:nth-child({section_index+1}){selectors["extras_wrapper"]}"
+            selector_section = f"{
+                selectors["content_section"]}:nth-child({section_index+1}){selectors["extras_wrapper"]}"
             section = self.get_elems(selector_section)
             if section:
                 first_extra_index = section_index
-                break     
-        
+                break
+
         # Loop each extra table
         extras_num = len(self.get_elems(selectors["extras_wrapper"]))
         for extra_index in range(extras_num):
-            
+
             # Get extra title
-            selector_extra = f"{selectors["extras_wrapper"]}:nth-child({extra_index+first_extra_index+1})"
+            selector_extra = f"{
+                selectors["extras_wrapper"]}:nth-child({extra_index+first_extra_index+1})"
             selector_title = f"{selector_extra} {selectors["title"]}"
             title = self.get_text(selector_title)
-            
+
             # Loop data tables
             selectors_table = selectors["table"]
             selector_tables = f"{selector_extra} {selectors_table["wrapper"]}"
             tables_num = len(self.get_elems(selector_tables))
             for table_index in range(tables_num):
-                
-                selector_table = f"{selector_tables}:nth-child({table_index+1})"
-                
+
+                selector_table = f"{
+                    selector_tables}:nth-child({table_index+1})"
+
                 # Get table title
-                selector_table_title = f"{selector_table} {selectors_table["title"]}"
+                selector_table_title = f"{selector_table} {
+                    selectors_table["title"]}"
                 table_title = self.get_text(selector_table_title)
-                
+
                 # Get table status
-                selector_table_status = f"{selector_table} {selectors_table["status"]}" 
+                selector_table_status = f"{selector_table} {
+                    selectors_table["status"]}"
                 table_status = self.get_text(selector_table_status)
-                
+
                 # Get table info
-                selector_rows = f"{selector_table} {selectors_table["data"]["wrapper"]}"
+                selector_rows = f"{selector_table} {
+                    selectors_table["data"]["wrapper"]}"
                 rows_num = len(self.get_elems(selector_rows))
                 for row_index in range(rows_num):
-                    
+
                     selector_row = f"{selector_rows}:nth-child({row_index+1})"
-                    
+
                     # Get row data
-                    selector_item = f"{selector_row} {selectors_table["data"]["item"]}"
-                    selector_value = f"{selector_row} {selectors_table["data"]["value"]}"
+                    selector_item = f"{selector_row} {
+                        selectors_table["data"]["item"]}"
+                    selector_value = f"{selector_row} {
+                        selectors_table["data"]["value"]}"
                     item = self.get_text(selector_item)
                     value = self.get_text(selector_value)
-                    
+
                     # Save data
-                    data.append ({
+                    data.append({
                         "origin": title,
                         "status": table_status,
                         "name": table_title,
                         "item": item,
                         "value": value,
                         "index": table_index + 1,
-                    })               
-        
+                    })
+
         return data
-    
-    def get_complete_offering_data (self) -> list:
-        
+
+    def get_complete_offering_data(self) -> list:
+        """ Get data from complete offering table
+
+        Returns:
+            list: complete offering data
+
+            Structure:
+            [
+                {
+                    "type": str,
+                    "method": str,
+                    "share_equivalent": str,
+                    "price": str,
+                    "warrants": str,
+                    "offering_amt": str,
+                    "bank": str,
+                    "investors": str,
+                    "date": str,
+                },
+                ...
+            ]
+        """
+
         selectors = {}
         selectors["table"] = '#stickyTableHeadingExtraTopWhite + table tbody'
         selectors["rows"] = f'{selectors["table"]} tr'
@@ -631,22 +676,91 @@ class ScrapingDilutionTracker (WebScraping):
             "investors": f'td:nth-child(8)',
             "date": f'td:nth-child(9)',
         }
-        
+
         data = []
-        
+
         # Get data from each row
         rows_num = len(self.get_elems(selectors["rows"]))
         for row_index in range(rows_num):
-            
+
             selector_row = f"{selectors["rows"]}:nth-child({row_index+1})"
-            
+
             # Get row data
             row_data = {}
             for column_name, selector in selectors["columns"].items():
-                selector_column = f"{selector_row}:nth-child({row_index+1}) {selector}"
+                selector_column = f"{
+                    selector_row}:nth-child({row_index+1}) {selector}"
                 row_data[column_name] = self.get_text(selector_column)
-                
+
             # Save data
             data.append(row_data)
+
+        return data
+
+    def get_news_data(self) -> list:
+        """ Get last 5 news data
+
+        Returns:
+            list: news data
+            
+            Structure:
+            [
+                {
+                    "time_ago_number": int,
+                    "time_ago_label": str,
+                    "datetime": datetime,
+                    "headline": str,
+                    "link": str,
+                },
+                ...
+            ]
+        """
+
+        selectors = {}
+        selectors["btn"] = '#result-tab-news'
+        selectors['table_wrapper'] = '.mb-5:last-child'
+        selectors['news_wrapper'] = f'{selectors["table_wrapper"]} .my-2'
+        selectors['items'] = {
+            "time_ago": 'span:nth-child(1)',
+            "datetime": 'span:nth-child(3)',
+            "link": "a",
+        }
         
+
+        data = []
+
+        # Move to news tab
+        self.click(selectors["btn"])
+        self.refresh_selenium()
+
+        # Get last 5 news
+        for index in range(2, 7):
+
+            selector_news = f'{selectors["news_wrapper"]}:nth-child({index})'
+            selector_time_ago = f'{selector_news} {selectors["items"]["time_ago"]}'
+            selector_datetime = f'{selector_news} {selectors["items"]["datetime"]}'
+            selector_link = f'{selector_news} {selectors["items"]["link"]}'
+
+            # Get data
+            time_ago = self.get_text(selector_time_ago)
+            datetime = self.get_text(selector_datetime)
+            headline = self.get_text(selector_link)
+            link = self.get_attrib(selector_link, "href")
+
+            # Separate time ago
+            time_ago_parts = time_ago.split(" ")
+            time_ago_number = int(time_ago_parts[0])
+            time_ago_label = time_ago_parts[1]
+
+            # Convert formmat 11/17/2023, 9:04:00 AM  to datetime
+            datetime = dt.strptime(datetime, "%m/%d/%Y, %I:%M:%S %p")
+
+            data.append({
+                "time_ago_number": time_ago_number,
+                "time_ago_label": time_ago_label,
+                "datetime": datetime,
+                "headline": headline,
+                "link": link,
+            })
+            
         return data
