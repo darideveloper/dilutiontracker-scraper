@@ -2,7 +2,7 @@ import os
 import csv
 from dotenv import load_dotenv
 from logs import logger
-from scraper import ScrapingDilutionTracker
+from scraping.scraper_dt import ScrapingDilutionTracker
 load_dotenv()
 
 DEBUG = os.getenv("DEBUG") == "True"
