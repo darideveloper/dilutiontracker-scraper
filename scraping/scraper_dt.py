@@ -1,5 +1,5 @@
 import re
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 from scraping.web_scraping import WebScraping
 
 
@@ -841,7 +841,7 @@ class ScrapingDilutionTracker (WebScraping):
         return table_data
 
     def get_holders_data(self) -> list:
-        """ Get datqa from holders tab
+        """ Get data from holders tab
 
         Returns:
             list: holders data
@@ -907,3 +907,92 @@ class ScrapingDilutionTracker (WebScraping):
         )
 
         return table_data
+
+    def get_filings_data (self) -> list:
+        """ Get filings from the last 10 days, data from filings tab
+        in Chronological table
+
+        Returns:
+            list: filings data
+            
+            Structure:
+            [
+                {
+                    "name": str,
+                    "headline": str,
+                    "date": datetime,
+                    "link": str,
+                },
+                ...
+            ]
+            
+        """
+        
+        selector_btn = '#result-tab-filings'
+        selector_display_all = '.secFilingFetchMoreRow'
+        selector_table = '.row > div:first-child .secFilingResultSingleContainer:first-child'
+        selector_rows = f'.secFilingTableWrapper > div'
+        selector_name = '.secFilingFormType'
+        selector_headline = '.secFilingDescription'
+        selector_date = '.secFilingFiledAt'
+        selector_link = '> div'
+
+        # Move to tab
+        self.click(selector_btn)
+        self.refresh_selenium()
+        
+        # Load add results
+        for _ in range (4):
+            
+            display_all_btn = self.get_elems(selector_display_all)
+            if not display_all_btn:
+                break
+            
+            self.click_js (selector_display_all)
+            
+            self.refresh_selenium ()
+            
+        # Get 10 days ago fromn today
+        days_ago = 10
+        today = dt.now ()
+        last_date = today - timedelta (days=days_ago)
+
+        # Loop rows
+        data = []
+        selector_row = f"{selector_table} {selector_rows}"
+        rows_num = len(self.get_elems(selector_row))
+        for index in range(rows_num):
+            
+            # Get data
+            selector_current_name = f"{selector_row}:nth-child({index+1}) {selector_name}"
+            selector_current_headline = f"{selector_row}:nth-child({index+1}) {selector_headline}"
+            selector_current_date = f"{selector_row}:nth-child({index+1}) {selector_date}"
+            
+            name = self.get_text (selector_current_name)
+            headline = self.get_text (selector_current_headline)
+            date = self.get_text (selector_current_date)
+            
+            # Format date like 11/16/23
+            date = dt.strptime (date, "%m/%d/%y")
+            
+            # Get link openning in a new tab
+            selector_current_link = f"{selector_row}:nth-child({index+1}) {selector_link}"
+            self.click_js (selector_current_link)
+            self.switch_to_tab (1)
+            link = self.driver.current_url
+            self.close_tab ()
+            self.switch_to_tab (0)
+            
+            # End when found the last date
+            if date < last_date:
+                break
+            
+            data.append ({
+                "name": name,
+                "headline": headline,
+                "date": date,
+                "link": link,
+            })
+        
+        return data
+                    
