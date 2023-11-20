@@ -59,28 +59,25 @@ def main ():
             continue
             
         # Scraper secondary data
-        # logger.info("scraping historical data...")
-        # historical_data = scraper.get_historical_data()
+        logger.info("scraping historical data...")
+        historical_data = scraper.get_historical_data()
         
-        # logger.info("scraping cash data...")
-        # cash_data = scraper.get_cash_data()
+        logger.info("scraping cash data...")
+        cash_data = scraper.get_cash_data()
         
-        # logger.info("scraping extra data...")
-        # extra_data = scraper.get_extra_data()
+        logger.info("scraping extra data...")
+        extra_data = scraper.get_extra_data()
         
-        # logger.info("scraping complete offering data...")
-        # complete_offering_data = scraper.get_complete_offering_data()
+        logger.info("scraping complete offering data...")
+        complete_offering_data = scraper.get_complete_offering_data()
         
-        # logger.info("scraping news data...")
-        # news_data = scraper.get_news_data()
+        logger.info("scraping news data...")
+        news_data = scraper.get_news_data()
         
-        # logger.info("scraping holders data...")
-        # holders_data = scraper.get_holders_data()
+        logger.info("scraping holders data...")
+        holders_data = scraper.get_holders_data()
         
-        # logger.info ("scraping filings data...")
-        # filings_data = scraper.get_filings_data()
-        
-        logger.info ("scraping get filings data")
+        logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()
         
         # TODO: save data in database
@@ -89,10 +86,6 @@ def main ():
         if DEBUG and DEBUG_TRICKERS == tricker_num:
             logger.info ("Debug mode: ending...")
             break
-        
-        # Wait before next tricker
-        logger.info (f"waiting {WAIT_SECONDS} seconds before next tricker...")
-        sleep (WAIT_SECONDS)
 
 if __name__ == '__main__':
     main()

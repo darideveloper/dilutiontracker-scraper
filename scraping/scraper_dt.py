@@ -1,4 +1,5 @@
 import re
+from time import sleep
 from datetime import datetime as dt, timedelta
 from scraping.web_scraping import WebScraping
 
@@ -978,6 +979,7 @@ class ScrapingDilutionTracker (WebScraping):
             # Get link openning in a new tab
             selector_current_link = f"{selector_row}:nth-child({index+1}) {selector_link}"
             self.click_js (selector_current_link)
+            sleep (5)
             self.switch_to_tab (1)
             link = self.driver.current_url
             self.close_tab ()
