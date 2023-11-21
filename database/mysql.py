@@ -18,6 +18,7 @@ class MySQL ():
         self.password = password
         
         self.connection = None
+        self.cursor = None
 
     def run_sql (self, sql:str, auto_commit:bool=True, raise_errors:bool=True) -> list:
         """ Exceute sql code
@@ -42,11 +43,14 @@ class MySQL ():
                                         passwd=self.password,
                                         cursorclass=pymysql.cursors.DictCursor)
 
-        cursor = self.connection.cursor()
+        self.cursor = self.connection.cursor()
+        
+        # Replce "None" columns to "NULL"
+        sql = sql.replace ('"None"', 'NULL').replace("None", "NULL")
 
         # Try to run sql
         try:
-            cursor.execute (sql)
+            self.cursor.execute (sql)
         except Exception as err:
 
             if raise_errors:
@@ -58,7 +62,7 @@ class MySQL ():
 
         # try to get returned part
         try:
-            results = cursor.fetchall()
+            results = self.cursor.fetchall()
         except:
             results = None
 

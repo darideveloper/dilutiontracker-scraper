@@ -67,6 +67,7 @@ def main ():
         # Scraper secondary data
         logger.info("scraping historical data...")
         historical_data = scraper.get_historical_data()
+        database.save_historical_data (historical_data)
         
         logger.info("scraping cash data...")
         cash_data = scraper.get_cash_data()

@@ -61,7 +61,7 @@ class ScrapingDilutionTracker (WebScraping):
             Structure:
             [
                 {
-                    "id": int,
+                    "position": int,
                     "date": datetime,
                     "hos": float,
                 },
@@ -100,7 +100,7 @@ class ScrapingDilutionTracker (WebScraping):
 
             # Save column data
             columns_data.append({
-                "id": column_index,
+                "position": column_index,
                 "date": date,
                 "hos": column_value,
             })
@@ -438,7 +438,7 @@ class ScrapingDilutionTracker (WebScraping):
             {
                 columns_data:   [
                     {
-                        "id": int,
+                        "position": int,
                         "date": datetime,
                         "hos": float,
                     },
@@ -519,7 +519,7 @@ class ScrapingDilutionTracker (WebScraping):
             {
                 columns_data:   [
                     {
-                        "id": int,
+                        "position": int,
                         "date": datetime,
                         "hos": float,
                     },
