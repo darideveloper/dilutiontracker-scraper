@@ -194,6 +194,7 @@ class ScrapingDilutionTracker (WebScraping):
 
         selectors = {
             "btn_app": 'nav .btn-deepred',
+            "close_modal": '.intercom-post-close'
         }
 
         # Load home page
@@ -213,6 +214,12 @@ class ScrapingDilutionTracker (WebScraping):
         current_page = self.driver.current_url
         if old_page == current_page:
             return False
+        
+        # Close modal
+        modal_elem = self.get_elems (selectors ["close_modal"])
+        if modal_elem:
+            self.click_js (selectors ["close_modal"])
+            self.refresh_selenium ()
 
         return True
 

@@ -4,6 +4,7 @@ from time import sleep
 from dotenv import load_dotenv
 from logs import logger
 from scraping.scraper_dt import ScrapingDilutionTracker
+from database.db import Database
 load_dotenv()
 
 DEBUG = os.getenv("DEBUG") == "True"
@@ -12,6 +13,9 @@ CHROME_FOLDER = os.getenv('CHROME_FOLDER')
 WAIT_SECONDS = int(os.getenv('WAIT_SECONDS'))
 
 def main ():
+    
+    # Connect to database
+    database = Database()
     
     # Validate chrome folder
     if CHROME_FOLDER is None or not os.path.isdir(CHROME_FOLDER):
@@ -57,6 +61,8 @@ def main ():
         if not premarket_data["found"]:
             logger.info (f"\t* {premarket_data["dilution_data"]}")
             continue
+        
+        database.save_premarket_data (premarket_data)
             
         # Scraper secondary data
         logger.info("scraping historical data...")
