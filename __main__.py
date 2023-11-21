@@ -1,6 +1,5 @@
 import os
 import csv
-from time import sleep
 from dotenv import load_dotenv
 from logs import logger
 from scraping.scraper_dt import ScrapingDilutionTracker

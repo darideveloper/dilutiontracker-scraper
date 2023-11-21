@@ -62,7 +62,65 @@ class Database (MySQL):
 
         self.run_sql(sql, auto_commit=False)
 
-    def save_premarket_data(self, premarket_data):
+    def __get_column_origin__ (self, origin:str) -> int:
+        """ Get a register from columns_origins table
+            (create if not exists)
+
+        Args:
+            origin (str): origin name
+
+        Returns:
+            int: origin id
+        """
+        
+        origin = "historical"
+        columns_origins = self.__get_dict_table__("columns_origins")
+        colunms_origin_id = columns_origins.get (origin, None)
+        if not origin in columns_origins.keys():
+            self.__inert_dict_table__("columns_origins", origin)
+            colunms_origin_id = self.cursor.lastrowid
+        
+        return colunms_origin_id
+
+    def __save_columns__ (self, columns_data:list, colunms_origin:str):
+        """ Save columns in database
+        
+        Args:
+            columns_data (list): columns data
+                Structure:
+                [
+                    {
+                        "position": int,
+                        "date": datetime,
+                        "hos": float,
+                    },
+                ]
+            colunms_origin (str): columns origin name
+        """
+        
+        colunms_origin_id = self.__get_column_origin__(colunms_origin)
+        
+        for column in columns_data:
+            
+            sql = f"""
+                INSERT INTO columns (
+                    origin_id,
+                    premarket_id,
+                    position,
+                    date,
+                    hos
+                ) values (
+                    {colunms_origin_id},
+                    {self.premarket_id},
+                    {column["position"]},
+                    "{column["date"].strftime("%Y-%m-%d")}",
+                    {column["hos"]}                
+                )
+            """
+            
+            self.run_sql(sql, auto_commit=False) 
+
+    def save_premarket_data(self, premarket_data:dict):
         """ Save in database the premarket data
 
         Args:
@@ -170,7 +228,7 @@ class Database (MySQL):
         # Commit changes
         self.commit_close()
 
-    def save_historical_data(self, historical_data):
+    def save_historical_data(self, historical_data:dict):
         """ Save in database the historial data
 
         Args:
@@ -193,14 +251,6 @@ class Database (MySQL):
                 s1_offering: float,                
             }
         """
-        
-        # Get columns origin
-        columns_origin = "historical"
-        columns_origins = self.__get_dict_table__("columns_origins")
-        colunms_origin_id = columns_origins.get (columns_origin, None)
-        if not columns_origin in columns_origins.keys():
-            self.__inert_dict_table__("columns_origins", columns_origin)
-            colunms_origin_id = self.cursor.lastrowid
 
         # Save historial data
         sql = f"""
@@ -229,25 +279,35 @@ class Database (MySQL):
         
         # Insert columns data
         columns_data = historical_data["columns_data"]
-        for column in columns_data:
-            
-            sql = f"""
-                INSERT INTO columns (
-                    origin_id,
-                    premarket_id,
-                    position,
-                    date,
-                    hos
-                ) values (
-                    {colunms_origin_id},
-                    {self.premarket_id},
-                    {column["position"]},
-                    "{column["date"].strftime("%Y-%m-%d")}",
-                    {column["hos"]}                
-                )
-            """
-            
-            self.run_sql(sql, auto_commit=False)          
+        self.__save_columns__(columns_data, "historical")
 
         # Commit changes
         self.commit_close()
+        
+    def save_cash_data(self, cash_data:dict):
+        """ Save in database the cash data
+        
+        Args:
+            cash_data (dict): cash data
+            
+            Structure:
+            {
+                columns_data:   [
+                    {
+                        "position": int,
+                        "date": datetime,
+                        "hos": float,
+                    },
+                ].
+                prorated_operating: float,
+                capital_rise: float,
+                current_cash_sheet: float,
+                cash_description: str,
+                months_of_cash: float,
+                quarterly_cash_burn_m: float,
+                current_cash_m: float,
+                m: float,
+            }
+        """
+        
+        pass
