@@ -416,38 +416,42 @@ class Database (MySQL):
             "status": "extras_status",
             "name": "extras_names",
         }
+        
+        # Split extra data in 5 chunks
+        extra_data_chunks = [extra_data[i:i + 5] for i in range(0, len(extra_data), 5)]
 
         # Save each row
         dict_tables_data = {}
-        for extra_data_row in extra_data:
+        for extra_data in extra_data_chunks:
+            for extra_data_row in extra_data:
 
-            self.__get_dict_tables_data__(
-                tables, extra_data_row, dict_tables_data)
+                self.__get_dict_tables_data__(
+                    tables, extra_data_row, dict_tables_data)
 
-            # Save row data
-            sql = f"""
-                INSERT INTO extras (
-                    premarket_id,
-                    origin_id,
-                    status_id,
-                    name_id,
-                    position,
-                    title,
-                    item
-                ) values (
-                    {self.premarket_id},
-                    {dict_tables_data["origin"][extra_data_row["origin"]]},
-                    {dict_tables_data["status"][extra_data_row["status"]]},
-                    {dict_tables_data["name"][extra_data_row["name"]]},
-                    {extra_data_row["position"]},
-                    {self.get_clean_text(extra_data_row["title"])},
-                    {self.get_clean_text(extra_data_row["value"])}
-                )
-            """
-            self.run_sql(sql, auto_commit=False)
+                # Save row data
+                sql = f"""
+                    INSERT INTO extras (
+                        premarket_id,
+                        origin_id,
+                        status_id,
+                        name_id,
+                        position,
+                        title,
+                        item
+                    ) values (
+                        {self.premarket_id},
+                        {dict_tables_data["origin"][extra_data_row["origin"]]},
+                        {dict_tables_data["status"][extra_data_row["status"]]},
+                        {dict_tables_data["name"][extra_data_row["name"]]},
+                        {extra_data_row["position"]},
+                        {self.get_clean_text(extra_data_row["title"])},
+                        {self.get_clean_text(extra_data_row["value"])}
+                    )
+                """
+                self.run_sql(sql, auto_commit=False)
 
-        # Commit changes
-        self.commit_close()
+            # Commit changes
+            self.commit_close()
 
     def save_completed_offering_data(self, completed_offering_data: list):
         """ Save in database the complete offering data
@@ -478,43 +482,48 @@ class Database (MySQL):
             "investors": "completed_offerings_investors",
         }
 
-        # Save each row
+        
+        # Split data un chunks
+        completed_offering_data_chunks = [completed_offering_data[i:i + 5] for i in range(0, len(completed_offering_data), 5)]
+        
         dict_tables_data = {}
-        for completed_data_row in completed_offering_data:
+        for completed_offering_data in completed_offering_data_chunks:
+            
+            for completed_data_row in completed_offering_data:
 
-            self.__get_dict_tables_data__(
-                tables, completed_data_row, dict_tables_data)
+                self.__get_dict_tables_data__(
+                    tables, completed_data_row, dict_tables_data)
 
-            # Save row data
-            sql = f"""
-                INSERT INTO completed_offerings (
-                    premarket_id,
-                    type_id,
-                    method_id,
-                    share_equivalent,
-                    price,
-                    warrants,
-                    offering_amt,
-                    bank,
-                    investors,
-                    date
-                ) values (
-                    {self.premarket_id},
-                    {dict_tables_data["type"][completed_data_row["type"]]},
-                    {dict_tables_data["method"][completed_data_row["method"]]},
-                    {completed_data_row["share_equivalent"]},
-                    {completed_data_row["price"]},
-                    {completed_data_row["warrants"]},
-                    {completed_data_row["offering_amt"]},
-                    {self.get_clean_text(completed_data_row["bank"])},
-                    {dict_tables_data["investors"][completed_data_row["investors"]]},
-                    "{completed_data_row["date"].strftime("%Y-%m-%d")}"
-                )
-            """
-            self.run_sql(sql, auto_commit=False)
+                # Save row data
+                sql = f"""
+                    INSERT INTO completed_offerings (
+                        premarket_id,
+                        type_id,
+                        method_id,
+                        share_equivalent,
+                        price,
+                        warrants,
+                        offering_amt,
+                        bank,
+                        investors,
+                        date
+                    ) values (
+                        {self.premarket_id},
+                        {dict_tables_data["type"][completed_data_row["type"]]},
+                        {dict_tables_data["method"][completed_data_row["method"]]},
+                        {completed_data_row["share_equivalent"]},
+                        {completed_data_row["price"]},
+                        {completed_data_row["warrants"]},
+                        {completed_data_row["offering_amt"]},
+                        {self.get_clean_text(completed_data_row["bank"])},
+                        {dict_tables_data["investors"][completed_data_row["investors"]]},
+                        "{completed_data_row["date"].strftime("%Y-%m-%d")}"
+                    )
+                """
+                self.run_sql(sql, auto_commit=False)
 
-        # Commit changes
-        self.commit_close()
+            # Commit changes
+            self.commit_close()
 
     def save_news_data(self, news_data: list):
         """ Save in database the news data
@@ -647,36 +656,42 @@ class Database (MySQL):
             "name": "fillings_names"
         }
         
-        dict_tables_data = {}
-        for fillings_data_row in fillings_data:
-
-            self.__get_dict_tables_data__(
-                tables, 
-                fillings_data_row,
-                dict_tables_data
-            )
-
-            # Save row data
-            sql = f"""
-                INSERT INTO fillings (
-                    premarket_id,
-                    name_id,
-                    headline,
-                    date,
-                    link
-                ) values (
-                    {self.premarket_id},
-                    {dict_tables_data["name"][fillings_data_row["name"]]},
-                    {self.get_clean_text(fillings_data_row["headline"])},
-                    "{fillings_data_row["date"].strftime("%Y-%m-%d")}",
-                    "{fillings_data_row["link"]}"
-                )                      
-            """
-            self.run_sql(sql, auto_commit=False)
-
-        # Commit changes
-        self.commit_close()
         
+        # Split fillings data in chunks
+        fillings_data_chunks = [fillings_data[i:i + 5] for i in range(0, len(fillings_data), 5)]
+        
+        dict_tables_data = {}
+        for fillings_data in fillings_data_chunks:
+        
+            for fillings_data_row in fillings_data:
+
+                self.__get_dict_tables_data__(
+                    tables, 
+                    fillings_data_row,
+                    dict_tables_data
+                )
+
+                # Save row data
+                sql = f"""
+                    INSERT INTO fillings (
+                        premarket_id,
+                        name_id,
+                        headline,
+                        date,
+                        link
+                    ) values (
+                        {self.premarket_id},
+                        {dict_tables_data["name"][fillings_data_row["name"]]},
+                        {self.get_clean_text(fillings_data_row["headline"])},
+                        "{fillings_data_row["date"].strftime("%Y-%m-%d")}",
+                        "{fillings_data_row["link"]}"
+                    )                      
+                """
+                self.run_sql(sql, auto_commit=False)
+
+            # Commit changes
+            self.commit_close()
+
     def save_noncompliant_data (self, noncompliant_data:list):
         """ Save in database the no compliant data
 

@@ -671,8 +671,8 @@ class ScrapingDilutionTracker (WebScraping):
                     selector_row = f'{selector_rows}:nth-child({row_index+1})'
 
                     # Get row data
-                    selector_item = f'{selector_row} {selector_table["data"]["item"]}'
-                    selector_value = f'{selector_row} {selector_table["data"]["value"]}'
+                    selector_item = f'{selector_row} {selectors_table["data"]["item"]}'
+                    selector_value = f'{selector_row} {selectors_table["data"]["value"]}'
                     item = self.get_text(selector_item)
                     value = self.get_text(selector_value)
 
@@ -916,7 +916,7 @@ class ScrapingDilutionTracker (WebScraping):
         selector_btn = '#result-tab-filings'
         selector_display_all = '.secFilingFetchMoreRow'
         selector_table = '.row > div:first-child .secFilingResultSingleContainer:first-child'
-        selector_rows = f'.secFilingTableWrapper > div'
+        selector_rows = '.secFilingTableWrapper > div'
         selector_name = '.secFilingFormType'
         selector_headline = '.secFilingDescription'
         selector_date = '.secFilingFiledAt'

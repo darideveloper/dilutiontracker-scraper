@@ -56,7 +56,7 @@ class MySQL ():
             if raise_errors:
                 raise err
             else:
-                print (err, sql)
+                print(err, sql)
 
             return None
 
