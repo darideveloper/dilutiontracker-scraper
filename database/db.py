@@ -266,10 +266,11 @@ class Database (MySQL):
                 {dict_tables_data["dilution_amt_ex_shelf"][premarket_data["dilution_amt_ex_shelf"]]},
                 {dict_tables_data["historical"][premarket_data["historical"]]},
                 {dict_tables_data["cash_need"][premarket_data["cash_need"]]},
-                {self.get_clean_text(premarket_data["out_take"], "\n")},
+                '{premarket_data["out_take"]}',
                 {self.get_clean_text(premarket_data["update_info"])}
             )
         """
+        
         self.run_sql(sql, auto_commit=False)
 
         # Get premarket id

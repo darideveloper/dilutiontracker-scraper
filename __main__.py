@@ -62,7 +62,7 @@ def main ():
         
         # Validate data found
         if not premarket_data["found"]:
-            logger.info (f"\t* {premarket_data["dilution_data"]}")
+            logger.info (f"\t* {premarket_data['dilution_data']}")
             continue
         
         database.save_premarket_data (premarket_data)
