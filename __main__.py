@@ -9,7 +9,6 @@ load_dotenv()
 DEBUG = os.getenv("DEBUG") == "True"
 DEBUG_TRICKERS = int(os.getenv("DEBUG_TRICKERS"))
 CHROME_FOLDER = os.getenv('CHROME_FOLDER')
-WAIT_SECONDS = int(os.getenv('WAIT_SECONDS'))
 
 def main ():
     
@@ -90,6 +89,7 @@ def main ():
         
         logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()
+        database.save_filings_data (filings_data)
                 
         # End in debug mode
         if DEBUG and DEBUG_TRICKERS == tricker_num:

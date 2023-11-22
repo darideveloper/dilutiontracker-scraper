@@ -560,7 +560,7 @@ class Database (MySQL):
         # Commit changes
         self.commit_close()
 
-    def save_holders_data (self, holders: list):
+    def save_holders_data (self, holders_data: list):
         """ Save in database the holders data data
 
         Args:
@@ -588,11 +588,11 @@ class Database (MySQL):
 
         # Save each row
         dict_tables_data = {}
-        for completed_data_row in holders:
+        for holders_data_row in holders_data:
 
             self.__get_dict_tables_data__(
                 tables, 
-                completed_data_row,
+                holders_data_row,
                 dict_tables_data
             )
 
@@ -609,15 +609,67 @@ class Database (MySQL):
                     field_
                 ) values (
                     {self.premarket_id},
-                    {dict_tables_data["institution_name"][completed_data_row["institution_name"]]},
-                    {completed_data_row["percentage"]},
-                    {completed_data_row["shares"]},
-                    {completed_data_row["change"]},
-                    {dict_tables_data["form"][completed_data_row["form"]]},
-                    "{completed_data_row["efective"].strftime("%Y-%m-%d")}",
-                    "{completed_data_row["field"].strftime("%Y-%m-%d")}"
+                    {dict_tables_data["institution_name"][holders_data_row["institution_name"]]},
+                    {holders_data_row["percentage"]},
+                    {holders_data_row["shares"]},
+                    {holders_data_row["change"]},
+                    {dict_tables_data["form"][holders_data_row["form"]]},
+                    "{holders_data_row["efective"].strftime("%Y-%m-%d")}",
+                    "{holders_data_row["field"].strftime("%Y-%m-%d")}"
                 )
                    
+            """
+            self.run_sql(sql, auto_commit=False)
+
+        # Commit changes
+        self.commit_close()
+
+    def save_filings_data (self, fillings_data:list):
+        """ Save in database the filings data
+
+        Args:
+            fillings_data (list): dictionaries with filings data
+            
+            Structure:
+            [
+                {
+                    "name": str,
+                    "headline": str,
+                    "date": datetime,
+                    "link": str,
+                },
+                ...
+            ]
+        """
+        
+        tables = {
+            "name": "fillings_names"
+        }
+        
+        dict_tables_data = {}
+        for fillings_data_row in fillings_data:
+
+            self.__get_dict_tables_data__(
+                tables, 
+                fillings_data_row,
+                dict_tables_data
+            )
+
+            # Save row data
+            sql = f"""
+                INSERT INTO fillings (
+                    premarket_id,
+                    name_id,
+                    headline,
+                    date,
+                    link
+                ) values (
+                    {self.premarket_id},
+                    {dict_tables_data["name"][fillings_data_row["name"]]},
+                    {self.get_clean_text(fillings_data_row["headline"])},
+                    "{fillings_data_row["date"].strftime("%Y-%m-%d")}",
+                    "{fillings_data_row["link"]}"
+                )                      
             """
             self.run_sql(sql, auto_commit=False)
 
