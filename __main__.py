@@ -35,6 +35,11 @@ def main ():
     # Connect to dilution tracker
     scraper = ScrapingDilutionTracker(CHROME_FOLDER)
     
+    # Extract no complant data
+    logger.info ("\nscraping get no compliant_data data...\n")
+    no_compliant_data = scraper.get_no_compliant_data ()
+    # database.save_no_compliant_data (no_compliant_data)
+    
     # End if login failed
     is_logged = scraper.login()
     if is_logged:

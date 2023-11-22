@@ -1005,4 +1005,81 @@ class ScrapingDilutionTracker (WebScraping):
             })
         
         return data
+    
+    def get_no_compliant_data (self) -> list:
+        """ Get data from noncompliantcompanylist page
+
+        Returns:
+            list: no complaint data
+            
+            Structure:
+            [
+                {
+                    "company": str,
+                    "deficiency": str,
+                    "market": str,
+                    "notification_date": datetime,
+                },
+                ...
+            ]
+        """
+        
+        selectors = {
+            "dispay_btn": 'th [type="button"]',
+            "rows": '.rgMasterTable tbody tr',            
+            "company": 'td[colspan="4"] p',
+            "deficiency": 'td:nth-child(3)',
+            "market": 'td:nth-child(4)',
+            "notification_date": 'td:nth-child(5)',
+        }
+        
+        # Load page and open registers
+        self.set_page ("https://listingcenter.nasdaq.com/noncompliantcompanylist.aspx")
+        self.click_js (selectors ["dispay_btn"])
+        sleep (5)
+        self.refresh_selenium ()
+        
+        # Loop each row
+        rows_num = len (self.get_elems (selectors ["rows"]))
+        current_company = ""
+        data = []
+        for index in range (rows_num):
+            
+            selector_row = f"{selectors ['rows']}:nth-child({index+1})"
+            selector_company = f"{selector_row} {selectors ['company']}"
+            
+            # Detect new company
+            company = self.get_text (selector_company)
+            if company:
+                current_company = company
+                continue
+            
+            # Extract row data
+            selector_deficiency = f"{selector_row} {selectors ['deficiency']}"
+            selector_market = f"{selector_row} {selectors ['market']}"
+            selector_notification_date = f"{selector_row} {selectors ['notification_date']}"
+            
+            deficiency = self.get_text (selector_deficiency)
+            market = self.get_text (selector_market)
+            notification_date = self.get_text (selector_notification_date)
+            
+            # Format date
+            notification_date = dt.strptime (notification_date, "%m/%d/%Y")
+            
+            # Save data
+            data.append ({
+                "company": current_company,
+                "deficiency": deficiency,
+                "market": market,
+                "notification_date": notification_date,
+            })
+    
+        return data
+            
+            
+            
+            
+            
+            
+            
                     
