@@ -812,7 +812,8 @@ class ScrapingDilutionTracker (WebScraping):
             },
             "datetime": {
                 "selector": 'span:nth-child(3)',
-                "data_type": str,
+                "data_type": dt,
+                "extra": {"format": "%m/%d/%Y, %I:%M:%S %p"}
             },
             "headline": {
                 "selector": 'a',
@@ -861,7 +862,7 @@ class ScrapingDilutionTracker (WebScraping):
                     "percentage": float,
                     "shares": int,
                     "change": float,
-                    "from": str,
+                    "form": str,
                     "efective": datetime,
                     "field": datetime,
                 },
@@ -889,19 +890,19 @@ class ScrapingDilutionTracker (WebScraping):
                 "selector": "td:nth-child(4)",
                 "data_type": float,
             },
-            "from": {
+            "form": {
                 "selector": "td:nth-child(5)",
                 "data_type": str,
             },
             "efective": {
                 "selector": "td:nth-child(6)",
                 "data_type": dt,
-                "extra": {"format": "%Y-%m-%d"}
+                "extra": {"format": "%Y/%m/%d"}
             },
             "field": {
                 "selector": "td:nth-child(7)",
                 "data_type": dt,
-                "extra": {"format": "%Y-%m-%d"}
+                "extra": {"format": "%Y/%m/%d"}
             }
         }
 

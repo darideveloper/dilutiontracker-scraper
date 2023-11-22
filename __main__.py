@@ -82,9 +82,11 @@ def main ():
         
         logger.info("scraping news data...")
         news_data = scraper.get_news_data()
+        database.save_news_data (news_data)
         
         logger.info("scraping holders data...")
         holders_data = scraper.get_holders_data()
+        database.save_holders_data (holders_data)
         
         logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()

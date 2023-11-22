@@ -62,7 +62,7 @@ class Database (MySQL):
 
         self.run_sql(sql, auto_commit=False)
 
-    def __get_column_origin__ (self, origin:str) -> int:
+    def __get_column_origin__(self, origin: str) -> int:
         """ Get a register from columns_origins table
             (create if not exists)
 
@@ -72,19 +72,19 @@ class Database (MySQL):
         Returns:
             int: origin id
         """
-        
+
         origin = "historical"
         columns_origins = self.__get_dict_table__("columns_origins")
-        colunms_origin_id = columns_origins.get (origin, None)
+        colunms_origin_id = columns_origins.get(origin, None)
         if not origin in columns_origins.keys():
             self.__inert_dict_table__("columns_origins", origin)
             colunms_origin_id = self.cursor.lastrowid
-        
+
         return colunms_origin_id
 
-    def __save_columns__ (self, columns_data:list, colunms_origin:str):
+    def __save_columns__(self, columns_data: list, colunms_origin: str):
         """ Save columns in database
-        
+
         Args:
             columns_data (list): columns data
                 Structure:
@@ -97,11 +97,11 @@ class Database (MySQL):
                 ]
             colunms_origin (str): columns origin name
         """
-        
+
         colunms_origin_id = self.__get_column_origin__(colunms_origin)
-        
+
         for column in columns_data:
-            
+
             sql = f"""
                 INSERT INTO columns (
                     origin_id,
@@ -114,18 +114,18 @@ class Database (MySQL):
                     {self.premarket_id},
                     {column["position"]},
                     "{column["date"].strftime("%Y-%m-%d")}",
-                    {column["hos"]}                
+                    {column["hos"]}
                 )
             """
-            
-            self.run_sql(sql, auto_commit=False) 
 
-    def __get_dict_tables_data__ (self, tables:dict, values:dict, ids:dict={}) -> dict:
+            self.run_sql(sql, auto_commit=False)
+
+    def __get_dict_tables_data__(self, tables: dict, values: dict, ids: dict = {}) -> dict:
         """ Query multiple dicts (tables with only name and id) from database
             and create registers if not exists, and return ids.
-            
+
             All keys from tables must be in values dict
-        
+
         Args:
             tables (dict): tables names
                 Structure:
@@ -139,7 +139,7 @@ class Database (MySQL):
                     ...
                 }
             ids (dict, optional): Dictionary to save final ids. Defaults to [].
-                
+
         Returns:
             dict: tables ids
                 Structure:
@@ -148,7 +148,7 @@ class Database (MySQL):
                     ...
                 }
         """
-        
+
         # Insert new dict data in tables
         for field, table in tables.items():
 
@@ -169,7 +169,7 @@ class Database (MySQL):
 
         return ids
 
-    def save_premarket_data(self, premarket_data:dict):
+    def save_premarket_data(self, premarket_data: dict):
         """ Save in database the premarket data
 
         Args:
@@ -209,7 +209,8 @@ class Database (MySQL):
             "cash_need": "premarket_adjectives",
         }
 
-        dict_tables_data = self.__get_dict_tables_data__ (tables, premarket_data)
+        dict_tables_data = self.__get_dict_tables_data__(
+            tables, premarket_data)
 
         # Insert new dict data in tables
         for field, table in tables.items():
@@ -277,7 +278,7 @@ class Database (MySQL):
         # Commit changes
         self.commit_close()
 
-    def save_historical_data(self, historical_data:dict):
+    def save_historical_data(self, historical_data: dict):
         """ Save in database the historial data
 
         Args:
@@ -329,13 +330,13 @@ class Database (MySQL):
 
         # Commit changes
         self.commit_close()
-        
-    def save_cash_data(self, cash_data:dict):
+
+    def save_cash_data(self, cash_data: dict):
         """ Save in database the cash data
-        
+
         Args:
             cash_data (dict): cash data
-            
+
             Structure:
             {
                 columns_data:   [
@@ -355,7 +356,7 @@ class Database (MySQL):
                 m: float,
             }
         """
-        
+
         # Save cash data
         sql = f"""
             INSERT INTO cash (
@@ -381,15 +382,15 @@ class Database (MySQL):
             )
         """
         self.run_sql(sql, auto_commit=False)
-        
+
         # Insert columns data
         columns_data = cash_data["columns_data"]
         self.__save_columns__(columns_data, "cash")
 
         # Commit changes
         self.commit_close()
-        
-    def save_extra_data (self, extra_data:list):
+
+    def save_extra_data(self, extra_data: list):
         """ Save in database the extra data
 
         Args:
@@ -416,11 +417,12 @@ class Database (MySQL):
         }
 
         # Save each row
-        dict_tables_data = {} 
+        dict_tables_data = {}
         for extra_data_row in extra_data:
-            
-            self.__get_dict_tables_data__ (tables, extra_data_row, dict_tables_data)
-            
+
+            self.__get_dict_tables_data__(
+                tables, extra_data_row, dict_tables_data)
+
             # Save row data
             sql = f"""
                 INSERT INTO extras (
@@ -439,19 +441,19 @@ class Database (MySQL):
                     {extra_data_row["position"]},
                     {self.get_clean_text(extra_data_row["title"])},
                     {self.get_clean_text(extra_data_row["value"])}
-                )                   
+                )
             """
             self.run_sql(sql, auto_commit=False)
 
         # Commit changes
         self.commit_close()
-        
-    def save_completed_offering_data (self, completed_offering_data:list):
+
+    def save_completed_offering_data(self, completed_offering_data: list):
         """ Save in database the complete offering data
-        
+
         Args:
             completed_offering_data (list): dictionaries with complete offering data from details tables
-            
+
             Structure:
             [
                 {
@@ -468,19 +470,20 @@ class Database (MySQL):
                 ...
             ]
         """
-        
+
         tables = {
             "type": "completed_offerings_types",
             "method": "completed_offerings_methods",
             "investors": "completed_offerings_investors",
         }
-        
+
         # Save each row
-        dict_tables_data = {} 
+        dict_tables_data = {}
         for completed_data_row in completed_offering_data:
-            
-            self.__get_dict_tables_data__ (tables, completed_data_row, dict_tables_data)
-            
+
+            self.__get_dict_tables_data__(
+                tables, completed_data_row, dict_tables_data)
+
             # Save row data
             sql = f"""
                 INSERT INTO completed_offerings (
@@ -505,7 +508,116 @@ class Database (MySQL):
                     {self.get_clean_text(completed_data_row["bank"])},
                     {dict_tables_data["investors"][completed_data_row["investors"]]},
                     "{completed_data_row["date"].strftime("%Y-%m-%d")}"
-                )              
+                )
+            """
+            self.run_sql(sql, auto_commit=False)
+
+        # Commit changes
+        self.commit_close()
+
+    def save_news_data(self, news_data: list):
+        """ Save in database the news data
+
+        Args:
+            news_data (list): dictionaries with news data from details tables
+
+            Structure:
+            [
+                {
+                    "time_ago_number": int,
+                    "time_ago_label": str,
+                    "datetime": datetime,
+                    "headline": str,
+                    "link": str,
+                },
+                ...
+            ]
+        """
+
+        # Save each row
+        for news_data_row in news_data:
+
+            # Save row data
+            sql = f"""
+                INSERT INTO news (
+                    premarket_id,
+                    time_ago_number,
+                    time_ago_label,
+                    datetime,
+                    headline,
+                    link
+                ) values (
+                    {self.premarket_id},
+                    {news_data_row["time_ago_number"]},
+                    {self.get_clean_text(news_data_row["time_ago_label"])},
+                    "{news_data_row["datetime"].strftime("%Y-%m-%d %H:%M:%S")}",
+                    {self.get_clean_text(news_data_row["headline"])},
+                    "{news_data_row["link"]}"
+                )
+            """
+            self.run_sql(sql, auto_commit=False)
+
+        # Commit changes
+        self.commit_close()
+
+    def save_holders_data (self, holders: list):
+        """ Save in database the holders data data
+
+        Args:
+            holders (list): dictionaries with holders data
+
+            Structure:
+             [
+                {
+                    "institution_name": str,
+                    "percentage": float,
+                    "shares": int,
+                    "change": float,
+                    "form": str,
+                    "efective": datetime,
+                    "field": datetime,
+                },
+                ...
+            ]
+        """
+
+        tables = {
+            "institution_name": "holders_institutions",
+            "form": "holders_form_types",
+        }
+
+        # Save each row
+        dict_tables_data = {}
+        for completed_data_row in holders:
+
+            self.__get_dict_tables_data__(
+                tables, 
+                completed_data_row,
+                dict_tables_data
+            )
+
+            # Save row data
+            sql = f"""
+                INSERT INTO holders (
+                    premarket_id,
+                    institution_id,
+                    percentage,
+                    shares,
+                    change_,
+                    form_type_id,
+                    efective,
+                    field_
+                ) values (
+                    {self.premarket_id},
+                    {dict_tables_data["institution_name"][completed_data_row["institution_name"]]},
+                    {completed_data_row["percentage"]},
+                    {completed_data_row["shares"]},
+                    {completed_data_row["change"]},
+                    {dict_tables_data["form"][completed_data_row["form"]]},
+                    "{completed_data_row["efective"].strftime("%Y-%m-%d")}",
+                    "{completed_data_row["field"].strftime("%Y-%m-%d")}"
+                )
+                   
             """
             self.run_sql(sql, auto_commit=False)
 
