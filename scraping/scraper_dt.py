@@ -616,9 +616,9 @@ class ScrapingDilutionTracker (WebScraping):
                     "origin": str,
                     "status": str,
                     "name": str,
-                    "item": str,
+                    "title": str,
                     "value": str,
-                    "index": int,
+                    "position": int,
                 },
                 ...
             ]
@@ -705,14 +705,14 @@ class ScrapingDilutionTracker (WebScraping):
                         "origin": title,
                         "status": table_status,
                         "name": table_title,
-                        "item": item,
+                        "title": item,
                         "value": value,
-                        "index": table_index + 1,
+                        "position": table_index + 1,
                     })
 
         return data
 
-    def get_complete_offering_data(self) -> list:
+    def get_completed_offering_data(self) -> list:
         """ Get data from complete offering table
 
         Returns:
@@ -735,7 +735,7 @@ class ScrapingDilutionTracker (WebScraping):
             ]
         """
 
-        selector_rows = f'#stickyTableHeadingExtraTopWhite + table tr'
+        selector_rows = f'#stickyTableHeadingExtraTopWhite + table tbody tr'
         columns = {
             "type": {
                 "selector": f'td:nth-child(1)',
@@ -749,7 +749,7 @@ class ScrapingDilutionTracker (WebScraping):
                 "selector": f'td:nth-child(3)',
                 "data_type": int,
             },
-            "pricer": {
+            "price": {
                 "selector": f'td:nth-child(4)',
                 "data_type": float,
             },

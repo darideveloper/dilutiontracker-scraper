@@ -120,6 +120,55 @@ class Database (MySQL):
             
             self.run_sql(sql, auto_commit=False) 
 
+    def __get_dict_tables_data__ (self, tables:dict, values:dict, ids:dict={}) -> dict:
+        """ Query multiple dicts (tables with only name and id) from database
+            and create registers if not exists, and return ids.
+            
+            All keys from tables must be in values dict
+        
+        Args:
+            tables (dict): tables names
+                Structure:
+                {
+                    "str (field_name)": "str (table_name_db)",    
+                }
+            values (dict): values to insert
+                Structure:
+                {
+                    "str (table_name)": "str (scraping value)",
+                    ...
+                }
+            ids (dict, optional): Dictionary to save final ids. Defaults to [].
+                
+        Returns:
+            dict: tables ids
+                Structure:
+                {
+                    "table_name": "id",
+                    ...
+                }
+        """
+        
+        # Insert new dict data in tables
+        for field, table in tables.items():
+
+            # Get new sectors
+            fields = self.__get_dict_table__(table)
+            fields_names = fields.keys()
+            premarket_field = values[field]
+
+            # Save fields data
+            ids[field] = fields
+
+            # Save new sector
+            if not premarket_field in fields_names:
+                self.__inert_dict_table__(table, premarket_field)
+
+                # Update fields data
+                ids[field][premarket_field] = self.cursor.lastrowid
+
+        return ids
+
     def save_premarket_data(self, premarket_data:dict):
         """ Save in database the premarket data
 
@@ -160,7 +209,7 @@ class Database (MySQL):
             "cash_need": "premarket_adjectives",
         }
 
-        dict_tables_data = {}
+        dict_tables_data = self.__get_dict_tables_data__ (tables, premarket_data)
 
         # Insert new dict data in tables
         for field, table in tables.items():
@@ -201,7 +250,7 @@ class Database (MySQL):
                 our_take,
                 update_info
             ) values (
-                "{self.get_clean_text(premarket_data["name"])}",
+                {self.get_clean_text(premarket_data["name"])},
                 {dict_tables_data["sector"][premarket_data["sector"]]},
                 {dict_tables_data["industry"][premarket_data["industry"]]},
                 {premarket_data["mkt_cap"]},
@@ -209,15 +258,15 @@ class Database (MySQL):
                 {premarket_data["est_cash_sh"]},
                 {premarket_data["t25_inst_own"]},
                 {premarket_data["si"]},
-                "{self.get_clean_text(premarket_data["description_company"])}",
+                {self.get_clean_text(premarket_data["description_company"])},
                 {dict_tables_data["dilution_data"][premarket_data["dilution_data"]]},
                 {dict_tables_data["overall_risk"][premarket_data["overall_risk"]]},
                 {dict_tables_data["offering_abillity"][premarket_data["offering_abillity"]]},
                 {dict_tables_data["dilution_amt_ex_shelf"][premarket_data["dilution_amt_ex_shelf"]]},
                 {dict_tables_data["historical"][premarket_data["historical"]]},
                 {dict_tables_data["cash_need"][premarket_data["cash_need"]]},
-                "{self.get_clean_text(premarket_data["out_take"], "\n")}",
-                "{self.get_clean_text(premarket_data["update_info"])}"
+                {self.get_clean_text(premarket_data["out_take"], "\n")},
+                {self.get_clean_text(premarket_data["update_info"])}
             )
         """
         self.run_sql(sql, auto_commit=False)
@@ -274,9 +323,6 @@ class Database (MySQL):
         """
         self.run_sql(sql, auto_commit=False)
 
-        # Get premarket id
-        self.premarket_id = self.cursor.lastrowid
-        
         # Insert columns data
         columns_data = historical_data["columns_data"]
         self.__save_columns__(columns_data, "historical")
@@ -310,4 +356,158 @@ class Database (MySQL):
             }
         """
         
-        pass
+        # Save cash data
+        sql = f"""
+            INSERT INTO cash (
+                premarket_id,
+                cash_description,
+                months_of_cash,
+                quarterly_cash_burn_m,
+                current_cash_m,
+                m,
+                prorated_operating,
+                capital_rise,
+                current_cash_sheet
+            ) values (
+                {self.premarket_id},
+                {self.get_clean_text(cash_data["cash_description"])},
+                {cash_data["months_of_cash"]},
+                {cash_data["quarterly_cash_burn_m"]},
+                {cash_data["current_cash_m"]},
+                {cash_data["m"]},
+                {cash_data["prorated_operating"]},
+                {cash_data["capital_rise"]},
+                {cash_data["current_cash_sheet"]}
+            )
+        """
+        self.run_sql(sql, auto_commit=False)
+        
+        # Insert columns data
+        columns_data = cash_data["columns_data"]
+        self.__save_columns__(columns_data, "cash")
+
+        # Commit changes
+        self.commit_close()
+        
+    def save_extra_data (self, extra_data:list):
+        """ Save in database the extra data
+
+        Args:
+            extra_data (list): dictionaries with extra data from details tables
+
+            Structure:
+            [
+                {
+                    "origin": str,
+                    "status": str,
+                    "name": str,
+                    "title": str,
+                    "value": str,
+                    "position": int,
+                },
+                ...
+            ]
+        """
+
+        tables = {
+            "origin": "extras_origins",
+            "status": "extras_status",
+            "name": "extras_names",
+        }
+
+        # Save each row
+        dict_tables_data = {} 
+        for extra_data_row in extra_data:
+            
+            self.__get_dict_tables_data__ (tables, extra_data_row, dict_tables_data)
+            
+            # Save row data
+            sql = f"""
+                INSERT INTO extras (
+                    premarket_id,
+                    origin_id,
+                    status_id,
+                    name_id,
+                    position,
+                    title,
+                    item
+                ) values (
+                    {self.premarket_id},
+                    {dict_tables_data["origin"][extra_data_row["origin"]]},
+                    {dict_tables_data["status"][extra_data_row["status"]]},
+                    {dict_tables_data["name"][extra_data_row["name"]]},
+                    {extra_data_row["position"]},
+                    {self.get_clean_text(extra_data_row["title"])},
+                    {self.get_clean_text(extra_data_row["value"])}
+                )                   
+            """
+            self.run_sql(sql, auto_commit=False)
+
+        # Commit changes
+        self.commit_close()
+        
+    def save_completed_offering_data (self, completed_offering_data:list):
+        """ Save in database the complete offering data
+        
+        Args:
+            completed_offering_data (list): dictionaries with complete offering data from details tables
+            
+            Structure:
+            [
+                {
+                    "type": str,
+                    "method": str,
+                    "share_equivalent": int
+                    "price": float,
+                    "warrants": int,
+                    "offering_amt": int,
+                    "bank": str,
+                    "investors": str,
+                    "date": datetime,
+                },
+                ...
+            ]
+        """
+        
+        tables = {
+            "type": "completed_offerings_types",
+            "method": "completed_offerings_methods",
+            "investors": "completed_offerings_investors",
+        }
+        
+        # Save each row
+        dict_tables_data = {} 
+        for completed_data_row in completed_offering_data:
+            
+            self.__get_dict_tables_data__ (tables, completed_data_row, dict_tables_data)
+            
+            # Save row data
+            sql = f"""
+                INSERT INTO completed_offerings (
+                    premarket_id,
+                    type_id,
+                    method_id,
+                    share_equivalent,
+                    price,
+                    warrants,
+                    offering_amt,
+                    bank,
+                    investors,
+                    date
+                ) values (
+                    {self.premarket_id},
+                    {dict_tables_data["type"][completed_data_row["type"]]},
+                    {dict_tables_data["method"][completed_data_row["method"]]},
+                    {completed_data_row["share_equivalent"]},
+                    {completed_data_row["price"]},
+                    {completed_data_row["warrants"]},
+                    {completed_data_row["offering_amt"]},
+                    {self.get_clean_text(completed_data_row["bank"])},
+                    {dict_tables_data["investors"][completed_data_row["investors"]]},
+                    "{completed_data_row["date"].strftime("%Y-%m-%d")}"
+                )              
+            """
+            self.run_sql(sql, auto_commit=False)
+
+        # Commit changes
+        self.commit_close()

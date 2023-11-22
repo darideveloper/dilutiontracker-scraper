@@ -70,12 +70,15 @@ def main ():
         
         logger.info("scraping cash data...")
         cash_data = scraper.get_cash_data()
+        database.save_cash_data (cash_data)
         
         logger.info("scraping extra data...")
         extra_data = scraper.get_extra_data()
+        database.save_extra_data (extra_data)
         
         logger.info("scraping complete offering data...")
-        complete_offering_data = scraper.get_complete_offering_data()
+        completed_offering_data = scraper.get_completed_offering_data()
+        database.save_completed_offering_data (completed_offering_data)
         
         logger.info("scraping news data...")
         news_data = scraper.get_news_data()
@@ -85,9 +88,7 @@ def main ():
         
         logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()
-        
-        # TODO: save data in database
-        
+                
         # End in debug mode
         if DEBUG and DEBUG_TRICKERS == tricker_num:
             logger.info ("Debug mode: ending...")

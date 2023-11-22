@@ -74,6 +74,10 @@ class MySQL ():
     
     def get_clean_text (self, text:str, keep:list=[]) -> str():
         
+        # Fix none values
+        if not text:
+            return "NULL"
+        
         chars = [";", "--", "\b", "\r", "\t", "\n", "\f", "\v", "\0", "'", '"']
         
         # Ignore chats to keep
@@ -82,7 +86,8 @@ class MySQL ():
         
         for char in chars:
             text = text.replace(char, "")
-        return text
+            
+        return f'"{text}"'
     
     def commit_close (self): 
         """ Commit changes and close connection """
