@@ -36,9 +36,9 @@ def main ():
     scraper = ScrapingDilutionTracker(CHROME_FOLDER)
     
     # Extract no complant data
-    logger.info ("\nscraping get no compliant_data data...\n")
-    no_compliant_data = scraper.get_no_compliant_data ()
-    # database.save_no_compliant_data (no_compliant_data)
+    logger.info ("\nScraping noncompliant data...\n")
+    noncompliant_data = scraper.get_noncompliant_data ()
+    database.save_noncompliant_data (noncompliant_data)
     
     # End if login failed
     is_logged = scraper.login()

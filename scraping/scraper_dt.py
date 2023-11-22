@@ -1006,7 +1006,7 @@ class ScrapingDilutionTracker (WebScraping):
         
         return data
     
-    def get_no_compliant_data (self) -> list:
+    def get_noncompliant_data (self) -> list:
         """ Get data from noncompliantcompanylist page
 
         Returns:
