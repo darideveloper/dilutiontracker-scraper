@@ -287,7 +287,7 @@ class ScrapingDilutionTracker (WebScraping):
             "name": 'h1',
             "header": {
                 "wrapper_texts": ".mw-1010:nth-child(1) .cursor-default > div",
-                "wrapper_counters": ".mw-1010:nth-child(2) .cursor-default > div",
+                "wrapper_counters": '.mw-1010:nth-child(2) [class="cursor-default"] > div',
                 "info": "> span",
             },
             "description": {
@@ -381,8 +381,12 @@ class ScrapingDilutionTracker (WebScraping):
                 data["si"] = info.replace("%", "")
 
         # Company description
-        self.click(selectors["description"]["show_more_btn"])
-        self.refresh_selenium()
+        try:
+            self.click(selectors["description"]["show_more_btn"])
+        except:
+            pass
+        else:
+            self.refresh_selenium()
         data["description_company"] = self.get_text(
             selectors["description"]["info"])
 
@@ -1004,8 +1008,11 @@ class ScrapingDilutionTracker (WebScraping):
 
         return data
 
-    def get_noncompliant_data(self) -> list:
+    def get_noncompliant_data(self, tricker :str) -> list:
         """ Get data from noncompliantcompanylist page
+        
+        Args:
+            tricker (str): company tricker (identifier)
 
         Returns:
             list: no complaint data
@@ -1026,6 +1033,7 @@ class ScrapingDilutionTracker (WebScraping):
             "dispay_btn": 'th [type="button"]',
             "rows": '.rgMasterTable tbody tr',
             "company": 'td[colspan="4"] p',
+            "tricker": 'td:nth-child(2)',
             "deficiency": 'td:nth-child(3)',
             "market": 'td:nth-child(4)',
             "notification_date": 'td:nth-child(5)',
@@ -1053,6 +1061,12 @@ class ScrapingDilutionTracker (WebScraping):
                 current_company = company
                 continue
 
+            # Validate company tricker
+            selector_tricker = f'{selector_row} {selectors["tricker"]}'
+            current_tricker = self.get_text(selector_tricker).lower().strip()
+            if tricker not in current_tricker:
+                continue
+            
             # Extract row data
             selector_deficiency = f'{selector_row} {selectors["deficiency"]}'
             selector_market = f'{selector_row} {selectors["market"]}'

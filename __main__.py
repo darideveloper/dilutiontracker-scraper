@@ -35,11 +35,6 @@ def main ():
     # Connect to dilution tracker
     scraper = ScrapingDilutionTracker(CHROME_FOLDER)
     
-    # Extract no complant data
-    # logger.info ("\nScraping noncompliant data...\n")
-    # noncompliant_data = scraper.get_noncompliant_data ()
-    # database.save_noncompliant_data (noncompliant_data)
-    
     # End if login failed
     is_logged = scraper.login()
     if is_logged:
@@ -95,6 +90,11 @@ def main ():
         logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()
         database.save_filings_data (filings_data)
+        
+        # Extract no complant data
+        logger.info ("Scraping noncompliant data...\n")
+        noncompliant_data = scraper.get_noncompliant_data (tricker_key.lower().strip())
+        database.save_noncompliant_data (noncompliant_data)
                 
         # End in debug mode
         if DEBUG and DEBUG_TRICKERS == tricker_num:

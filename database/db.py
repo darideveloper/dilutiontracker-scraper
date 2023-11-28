@@ -730,12 +730,14 @@ class Database (MySQL):
                     company_id,
                     deficiency_id,
                     market_id,
-                    notification_date
+                    notification_date,
+                    premarket_id
                 ) values (
                     {dict_tables_data["company"][noncompliant_row["company"]]},
                     {dict_tables_data["deficiency"][noncompliant_row["deficiency"]]},
                     {dict_tables_data["market"][noncompliant_row["market"]]},
-                    "{noncompliant_row["notification_date"].strftime("%Y-%m-%d")}"
+                    "{noncompliant_row["notification_date"].strftime("%Y-%m-%d")}",
+                    {self.premarket_id}
                 )
                                      
             """
