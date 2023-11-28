@@ -183,6 +183,22 @@ class ScrapingDilutionTracker (WebScraping):
             data.append(data_row)
 
         return data
+    
+    def __clean_chars__ (self, text: str, chars: list) -> str:
+            """ Remove extra chars from text
+
+            Args:
+                text (str): text to clean
+                chars (list): chars to remove
+
+            Returns:
+                str: cleaned text
+            """
+            
+            for char in chars:
+                text = text.replace (char, "")
+                
+            return text
 
     def login(self) -> bool:
         """ Validate correct login and go to app page
@@ -539,6 +555,7 @@ class ScrapingDilutionTracker (WebScraping):
             "current_cash_sheet": f'{selectors["graph"]} [name="Current Est"]:not([fill="none"])',
         }
         selectors["description"] = '#results-os-chart + p + p'
+        selectors["description_item"] = f"{selectors['description']} > strong"
 
         data = {}
 
@@ -578,13 +595,18 @@ class ScrapingDilutionTracker (WebScraping):
         data["quarterly_cash_burn_m"] = None
         data["current_cash_m"] = None
         data["m"] = None
-        numbers = re.findall(r'-?\d+(\.\d+)?', data["cash_description"])
-        if len(numbers) == 3:
-            data["months_of_cash"] = numbers[0]
-            data["quarterly_cash_burn_m"] = numbers[1]
-            data["current_cash_m"] = numbers[2]
-        elif len(numbers) == 1:
-            data["m"] = numbers[0]
+        description_items = self.get_texts(selectors["description_item"])
+        
+        # Clean description items
+        remove_chars = [" months", "-", "$", "M"]
+        description_items = list(map(lambda item: self.__clean_chars__(item, remove_chars), description_items))
+        
+        if len(description_items) == 3:
+            data["months_of_cash"] = description_items[0]
+            data["quarterly_cash_burn_m"] = description_items[1]
+            data["current_cash_m"] = description_items[2][:-1]
+        elif len(description_items) == 1:
+            data["m"] = description_items[0]
 
         return data
 
