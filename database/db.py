@@ -73,14 +73,13 @@ class Database (MySQL):
             int: origin id
         """
 
-        origin = "historical"
         columns_origins = self.__get_dict_table__("columns_origins")
-        colunms_origin_id = columns_origins.get(origin, None)
+        columns_origin_id = columns_origins.get(origin, None)
         if not origin in columns_origins.keys():
             self.__inert_dict_table__("columns_origins", origin)
-            colunms_origin_id = self.cursor.lastrowid
+            columns_origin_id = self.cursor.lastrowid
 
-        return colunms_origin_id
+        return columns_origin_id
 
     def __save_columns__(self, columns_data: list, colunms_origin: str):
         """ Save columns in database
@@ -98,7 +97,7 @@ class Database (MySQL):
             colunms_origin (str): columns origin name
         """
 
-        colunms_origin_id = self.__get_column_origin__(colunms_origin)
+        columns_origin_id = self.__get_column_origin__(colunms_origin)
 
         for column in columns_data:
 
@@ -110,7 +109,7 @@ class Database (MySQL):
                     date,
                     hos
                 ) values (
-                    {colunms_origin_id},
+                    {columns_origin_id},
                     {self.premarket_id},
                     {column["position"]},
                     "{column["date"].strftime("%Y-%m-%d")}",
