@@ -633,11 +633,11 @@ class Database (MySQL):
         # Commit changes
         self.commit_close()
 
-    def save_filings_data (self, fillings_data:list):
+    def save_filings_data (self, filings_data:list):
         """ Save in database the filings data
 
         Args:
-            fillings_data (list): dictionaries with filings data
+            filings_data (list): dictionaries with filings data
             
             Structure:
             [
@@ -652,27 +652,27 @@ class Database (MySQL):
         """
         
         tables = {
-            "name": "fillings_names"
+            "name": "filings_names"
         }
         
         
-        # Split fillings data in chunks
-        fillings_data_chunks = [fillings_data[i:i + 5] for i in range(0, len(fillings_data), 5)]
+        # Split filings data in chunks
+        filings_data_chunks = [filings_data[i:i + 5] for i in range(0, len(filings_data), 5)]
         
         dict_tables_data = {}
-        for fillings_data in fillings_data_chunks:
+        for filings_data in filings_data_chunks:
         
-            for fillings_data_row in fillings_data:
+            for filings_data_row in filings_data:
 
                 self.__get_dict_tables_data__(
                     tables, 
-                    fillings_data_row,
+                    filings_data_row,
                     dict_tables_data
                 )
 
                 # Save row data
                 sql = f"""
-                    INSERT INTO fillings (
+                    INSERT INTO filings (
                         premarket_id,
                         name_id,
                         headline,
@@ -680,10 +680,10 @@ class Database (MySQL):
                         link
                     ) values (
                         {self.premarket_id},
-                        {dict_tables_data["name"][fillings_data_row["name"]]},
-                        {self.get_clean_text(fillings_data_row["headline"])},
-                        "{fillings_data_row["date"].strftime("%Y-%m-%d")}",
-                        "{fillings_data_row["link"]}"
+                        {dict_tables_data["name"][filings_data_row["name"]]},
+                        {self.get_clean_text(filings_data_row["headline"])},
+                        "{filings_data_row["date"].strftime("%Y-%m-%d")}",
+                        "{filings_data_row["link"]}"
                     )                      
                 """
                 self.run_sql(sql, auto_commit=False)
@@ -715,33 +715,35 @@ class Database (MySQL):
             "market": "noncompliant_markets",
         }
         
-        dict_tables_data = {}
-        for noncompliant_row in noncompliant_data:
+        if noncompliant_data:
+            
+            dict_tables_data = {}
+            for noncompliant_row in noncompliant_data:
 
-            self.__get_dict_tables_data__(
-                tables, 
-                noncompliant_row,
-                dict_tables_data
-            )
-
-            # Save row data
-            sql = f"""
-                INSERT INTO noncompliant (
-                    company_id,
-                    deficiency_id,
-                    market_id,
-                    notification_date,
-                    premarket_id
-                ) values (
-                    {dict_tables_data["company"][noncompliant_row["company"]]},
-                    {dict_tables_data["deficiency"][noncompliant_row["deficiency"]]},
-                    {dict_tables_data["market"][noncompliant_row["market"]]},
-                    "{noncompliant_row["notification_date"].strftime("%Y-%m-%d")}",
-                    {self.premarket_id}
+                self.__get_dict_tables_data__(
+                    tables, 
+                    noncompliant_row,
+                    dict_tables_data
                 )
-                                     
-            """
-            self.run_sql(sql, auto_commit=False)
 
-        # Commit changes
-        self.commit_close()
+                # Save row data
+                sql = f"""
+                    INSERT INTO noncompliant (
+                        company_id,
+                        deficiency_id,
+                        market_id,
+                        notification_date,
+                        premarket_id
+                    ) values (
+                        {dict_tables_data["company"][noncompliant_row["company"]]},
+                        {dict_tables_data["deficiency"][noncompliant_row["deficiency"]]},
+                        {dict_tables_data["market"][noncompliant_row["market"]]},
+                        "{noncompliant_row["notification_date"].strftime("%Y-%m-%d")}",
+                        {self.premarket_id}
+                    )
+                                        
+                """
+                self.run_sql(sql, auto_commit=False)
+
+            # Commit changes
+            self.commit_close()

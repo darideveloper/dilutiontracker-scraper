@@ -208,7 +208,7 @@ class ScrapingDilutionTracker (WebScraping):
         """
 
         selectors = {
-            "btn_app": 'nav .btn-deepred',
+            "nav_items": 'nav li',
             "close_modal": '.intercom-post-close'
         }
 
@@ -217,13 +217,19 @@ class ScrapingDilutionTracker (WebScraping):
         self.refresh_selenium()
 
         # Validte if exists "go to app" button
-        button_text = self.get_text(selectors["btn_app"]).lower().strip()
-        if button_text != "go to app":
-            return False
+        go_to_app_found = False
+        buttons_texts = self.get_texts(selectors["nav_items"])
+        if "Go to App" in buttons_texts:
 
-        # Click on "go to app" button
-        old_page = self.driver.current_url
-        self.click(selectors["btn_app"])
+            # Go to home page
+            old_page = self.driver.current_url
+            self.set_page (f'{self.pages["home"]}/app')
+        
+            go_to_app_found = True
+            
+        # Detect if login failed
+        if not go_to_app_found:
+            return False
 
         # Validate page change
         current_page = self.driver.current_url
