@@ -46,12 +46,12 @@ class Database (MySQL):
 
         return data_dict
 
-    def __inert_dict_table__(self, table_name: str, name: str):
+    def __insert_dict_table__(self, table_name: str, name: str):
         """ Insert a name a dictionary table (tables with only name and id)
 
         Args:
             table_name (str): table name
-            name (str): name to insert
+            name (str): name to insert (already cleaned and with quotes)
         """
 
         # Insert new name
@@ -76,7 +76,7 @@ class Database (MySQL):
         columns_origins = self.__get_dict_table__("columns_origins")
         columns_origin_id = columns_origins.get(origin, None)
         if not origin in columns_origins.keys():
-            self.__inert_dict_table__("columns_origins", origin)
+            self.__insert_dict_table__("columns_origins", origin)
             columns_origin_id = self.cursor.lastrowid
 
         return columns_origin_id
@@ -154,17 +154,17 @@ class Database (MySQL):
             # Get new sectors
             fields = self.__get_dict_table__(table)
             fields_names = fields.keys()
-            premarket_field = values[field]
+            current_field = self.get_clean_text(values[field], add_quotes=False)
 
             # Save fields data
             ids[field] = fields
 
             # Save new sector
-            if not premarket_field in fields_names:
-                self.__inert_dict_table__(table, premarket_field)
+            if not current_field in fields_names:
+                self.__insert_dict_table__(table, current_field)
 
                 # Update fields data
-                ids[field][premarket_field] = self.cursor.lastrowid
+                ids[field][current_field] = self.cursor.lastrowid
 
         return ids
 
@@ -224,10 +224,16 @@ class Database (MySQL):
 
             # Save new sector
             if not premarket_field in fields_names:
-                self.__inert_dict_table__(table, premarket_field)
+                self.__insert_dict_table__(table, premarket_field)
 
                 # Update fields data
                 dict_tables_data[field][premarket_field] = self.cursor.lastrowid
+
+        # fix "out_take"
+        if premarket_data["out_take"]:
+            premarket_data["out_take"] = f"'{premarket_data['out_take']}'"
+        else:
+            premarket_data["out_take"] = "NULL"
 
         # Save premarket data
         sql = f"""
@@ -265,7 +271,7 @@ class Database (MySQL):
                 {dict_tables_data["dilution_amt_ex_shelf"][premarket_data["dilution_amt_ex_shelf"]]},
                 {dict_tables_data["historical"][premarket_data["historical"]]},
                 {dict_tables_data["cash_need"][premarket_data["cash_need"]]},
-                '{premarket_data["out_take"]}',
+                {self.get_clean_text(premarket_data["out_take"])},
                 {self.get_clean_text(premarket_data["update_info"])}
             )
         """

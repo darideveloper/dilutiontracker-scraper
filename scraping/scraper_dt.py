@@ -1,4 +1,3 @@
-import re
 from time import sleep
 from datetime import datetime as dt, timedelta
 from scraping.web_scraping import WebScraping
@@ -159,7 +158,14 @@ class ScrapingDilutionTracker (WebScraping):
                     continue
 
                 # Extract texts
+                replace_chats = [
+                    "\\",
+                    "'",
+                    '"'
+                ]
                 value = self.get_text(selector_column)
+                for chat in replace_chats:
+                    value = value.replace(chat, "")
 
                 # Skip empty values
                 if not value:
@@ -339,8 +345,9 @@ class ScrapingDilutionTracker (WebScraping):
         not_found = self.get_text(selectors["not_found"])
         if not_found:
             data["dilution_data"] = not_found
-            data["found"] = False
-            return data
+            if not_found == "We haven't indexed this ticker yet": 
+                data["found"] = False
+                return data
 
         # Get company name
         data["name"] = self.get_text(selectors["name"])
@@ -376,7 +383,7 @@ class ScrapingDilutionTracker (WebScraping):
             info = counters[1].text.lower()
 
             if "mkt cap" in key:
-                data["mkt_cap"] = info.split("m")[0]
+                data["mkt_cap"] = info.split("m")[0].split("t")[0]
             elif "float" in key:
                 data["float_cap"] = info.split("m")[0]
             elif "est" in key:
@@ -859,6 +866,9 @@ class ScrapingDilutionTracker (WebScraping):
 
     def get_holders_data(self) -> list:
         """ Get data from holders tab
+        
+        Args:
+            database (Database): database instance
 
         Returns:
             list: holders data

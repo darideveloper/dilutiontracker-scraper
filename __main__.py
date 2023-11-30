@@ -64,28 +64,34 @@ def main ():
             
         # Scraper secondary data
         logger.info("scraping historical data...")
-        historical_data = scraper.get_historical_data()
-        database.save_historical_data (historical_data)
-        
+        try:
+            historical_data = scraper.get_historical_data()
+            database.save_historical_data (historical_data)
+        except Exception as err:
+            print ("\thistorical data not found")
+                    
         logger.info("scraping cash data...")
-        cash_data = scraper.get_cash_data()
-        database.save_cash_data (cash_data)
+        try:
+            cash_data = scraper.get_cash_data()
+            database.save_cash_data (cash_data)
+        except Exception as err:
+            print ("\tcash data not found")
         
         logger.info("scraping extra data...")
         extra_data = scraper.get_extra_data()
         database.save_extra_data (extra_data)
         
-        # logger.info("scraping complete offering data...")
-        # completed_offering_data = scraper.get_completed_offering_data()
-        # database.save_completed_offering_data (completed_offering_data)
+        logger.info("scraping complete offering data...")
+        completed_offering_data = scraper.get_completed_offering_data()
+        database.save_completed_offering_data (completed_offering_data)
         
-        # logger.info("scraping news data...")
-        # news_data = scraper.get_news_data()
-        # database.save_news_data (news_data)
+        logger.info("scraping news data...")
+        news_data = scraper.get_news_data()
+        database.save_news_data (news_data)
         
-        # logger.info("scraping holders data...")
-        # holders_data = scraper.get_holders_data()
-        # database.save_holders_data (holders_data)
+        logger.info("scraping holders data...")
+        holders_data = scraper.get_holders_data()
+        database.save_holders_data (holders_data)
         
         logger.info ("scraping filings data...")
         filings_data = scraper.get_filings_data()
