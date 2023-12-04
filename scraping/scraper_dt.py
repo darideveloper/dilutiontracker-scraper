@@ -169,7 +169,7 @@ class ScrapingDilutionTracker (WebScraping):
 
                 # Skip empty values
                 if not value:
-                    data_row[colum_name] = None
+                    data_row[colum_name] = "NULL"
                     continue
 
                 # Convert numeric fields
